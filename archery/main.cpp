@@ -111,7 +111,7 @@ struct camera_t {
 };
 
 camera_t camera = {
-    {0, 1, 3},
+    {0, 2, 3},
     {0, 0, 0},
     {0, 1, 0},
 
@@ -181,6 +181,8 @@ int init() {
 
     g_target = make_target();
 
+    glutSetCursor(GLUT_CURSOR_NONE);
+
     return 0;
 }
 
@@ -198,12 +200,6 @@ void look() {
     );
 }
 
-void reset_mouse() {
-    // TODO
-    glutWarpPointer(WIN_W / 2, WIN_H / 2);
-    camera.pitch = camera.yaw = 0.0f;
-}
-
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -218,39 +214,35 @@ void display() {
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
 
-    camera_see();
-
-    set_material(porcelain);
     glPushMatrix();
-        glRotatef(90, 0, 1, 0);
-        glTranslatef(0, 2, 0);
-        glScalef(0.5f, 0.5f, 0.5f);
-        glCallList(g_target);
-    glPopMatrix();
 
-    // teapot
-    glPushMatrix();
-        set_material(brass);
-        glRotatef(g_angle_y, 0, 1, 0);
-        glRotatef(g_angle_z, 0, 0, 1);
-        glTranslatef(0, 1, 0);
-        glutSolidTeapot(0.5f);
-    glPopMatrix();
-
-    glPushMatrix();
-        float ground[4][3] = {
-            {1, 0, 1},
-            {1, 0, -1},
-            {-1, 0, -1},
-            {-1, 0, 1}
-        };
+        camera_see();
 
         set_material(porcelain);
-        glScalef(10, 10, 10);
-        glBegin(GL_QUADS);
-            for (size_t i = 0; i < 4; i++)
-                glVertex3fv(ground[i]);
-        glEnd();
+        glPushMatrix();
+            glRotatef(90, 0, 1, 0);
+            glTranslatef(0, 2, 0);
+            glScalef(0.5f, 0.5f, 0.5f);
+            glCallList(g_target);
+        glPopMatrix();
+
+        glPushMatrix();
+            float ground[4][3] = {
+                {1, 0, 1},
+                {1, 0, -1},
+                {-1, 0, -1},
+                {-1, 0, 1}
+            };
+
+            set_material(brass);
+            glScalef(10, 10, 10);
+            glBegin(GL_QUADS);
+                for (size_t i = 0; i < 4; i++)
+                    glVertex3fv(ground[i]);
+                glutSolidCube(1.0);
+            glEnd();
+        glPopMatrix();
+
     glPopMatrix();
 
     glDisable(GL_LIGHTING);
@@ -260,12 +252,12 @@ void display() {
     glLoadIdentity();
     gluOrtho2D(0, WIN_W, 0, WIN_H);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
     glPointSize(2.0f);
     glBegin(GL_POINTS);
         glVertex2f(WIN_W / 2, WIN_H / 2);
+
+        glTranslatef(-camera.pos.x, -camera.pos.y, -camera.pos.z + 1);
+        glutSolidCube(1.0);
     glEnd();
 
     glutSwapBuffers();
@@ -276,9 +268,6 @@ void keyboard(unsigned char k, int, int) {
     switch (k) {
     case 'q':
         exit(1);
-    case 'r':
-        reset_mouse();
-        break;
     case 'w':
         camera.pos.x += 0.2 * sin(camera.yaw * M_PI / 180);
         camera.pos.z -= 0.2 * cos(camera.yaw * M_PI / 180);
@@ -327,13 +316,11 @@ void normalize(float *v, float *n) {
 }
 
 void camera_see() {
-
     glRotatef(camera.pitch, 1.0f, 0.0f, 0.0f);  // rotate around x for pitch
     glRotatef(camera.yaw, 0.0f, 1.0f, 0.0f);    // rotate around y for yaw
 
     // translate screen to position of camera
     glTranslatef(-camera.pos.x, -camera.pos.y, -camera.pos.z);
-
 }
 
 void mouse_motion(int x, int y) {
@@ -365,7 +352,8 @@ void mouse_motion(int x, int y) {
 
     glutPostRedisplay();
 
-    if (last_x >= WIN_W-1 || last_x <= 0 || last_y >= WIN_H-1 || last_y <= 0) {
+    if (last_x > 3 * WIN_W / 4 || last_x < WIN_W / 4 || 
+            last_y > 3 * WIN_H / 4|| last_y < WIN_H / 4) {
         warped = true;
         glutWarpPointer(WIN_W / 2, WIN_H / 2);
     }
