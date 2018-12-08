@@ -15,8 +15,15 @@ int init();
 void display();
 void keyboard(unsigned char, int, int);
 void special(int, int, int);
+void mouse_click(int, int, int, int);
 void mouse_motion(int, int);
 void reshape(int, int);
+
+void cross(const float *a, const float *b, float *n) {
+    n[0] = (a[1] * b[2]) - (a[2] * b[1]);
+    n[1] = (a[2] * b[0]) - (a[0] * b[2]);
+    n[2] = (a[0] * b[1]) - (a[1] * b[0]);
+}
 
 void camera_see();
 
@@ -33,7 +40,8 @@ bool warped = false;
 int last_x = 320;
 int last_y = 320;
 
-size_t g_target;
+size_t g_target;    // target
+size_t g_earth;     // the ground
 
 struct light_t {
     size_t name;
@@ -62,6 +70,13 @@ const material_t porcelain = {
     {0.5f, 0.5f, 0.5f, 1.0f},
     {0.5f, 0.5f, 0.5f, 1.0f},
     100.f
+};
+
+const material_t flat = {
+    {0.2f, 0.2f, 0.2f, 1.0f},
+    {0.2f, 0.2f, 0.2f, 1.0f},
+    {0.2f, 0.2f, 0.2f, 1.0f},
+    100
 };
 
 light_t white_light = {
@@ -148,6 +163,31 @@ size_t make_target() {
     return handle;
 }
 
+size_t make_earth() {
+
+    const float verts[4][3] = {
+        { 1, 0, 1 },
+        { 1, 0, -1 },
+        { -1, 0, -1 },
+        { -1, 0, 1 }
+    };
+
+    float norm[3];
+    cross(verts[0], verts[1], norm);
+
+    size_t handle = glGenLists(1);
+
+    glNewList(handle, GL_COMPILE);
+        glNormal3f(norm[0], norm[1], norm[2]);
+        glBegin(GL_QUADS);
+            for (size_t i = 0; i < 4; i++)
+                glVertex3fv(verts[i]);
+        glEnd();
+    glEndList();
+
+    return handle;
+}        
+
 int main(int argc, char *argv[]) {
 
     glutInit(&argc, argv);
@@ -160,6 +200,7 @@ int main(int argc, char *argv[]) {
 
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special);
+    glutMouseFunc(mouse_click);
     glutPassiveMotionFunc(mouse_motion);
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
@@ -179,25 +220,12 @@ int init() {
     glEnable(GL_DEPTH_TEST);
     glShadeModel(GL_SMOOTH);
 
-    g_target = make_target();
-
     glutSetCursor(GLUT_CURSOR_NONE);
 
-    return 0;
-}
+    g_target = make_target();
+    g_earth = make_earth();
 
-void look() {
-    gluLookAt(
-        camera.pos.x,
-        camera.pos.y,
-        camera.pos.z,
-        camera.reference[0],
-        camera.reference[1],
-        camera.reference[2],
-        camera.up[0],
-        camera.up[1],
-        camera.up[2]
-    );
+    return 0;
 }
 
 void display() {
@@ -216,9 +244,16 @@ void display() {
 
     glPushMatrix();
 
+        glPushMatrix();
+            glTranslatef(0.4, -0.3, -0.8);
+            glRotatef(90, 0, 1, 0);
+            set_material(porcelain);
+            glutSolidTeapot(0.15);
+        glPopMatrix();
+        
         camera_see();
 
-        set_material(porcelain);
+        set_material(brass);
         glPushMatrix();
             glRotatef(90, 0, 1, 0);
             glTranslatef(0, 2, 0);
@@ -227,20 +262,9 @@ void display() {
         glPopMatrix();
 
         glPushMatrix();
-            float ground[4][3] = {
-                {1, 0, 1},
-                {1, 0, -1},
-                {-1, 0, -1},
-                {-1, 0, 1}
-            };
-
-            set_material(brass);
             glScalef(10, 10, 10);
-            glBegin(GL_QUADS);
-                for (size_t i = 0; i < 4; i++)
-                    glVertex3fv(ground[i]);
-                glutSolidCube(1.0);
-            glEnd();
+            set_material(flat);
+            glCallList(g_earth);
         glPopMatrix();
 
     glPopMatrix();
@@ -255,9 +279,6 @@ void display() {
     glPointSize(2.0f);
     glBegin(GL_POINTS);
         glVertex2f(WIN_W / 2, WIN_H / 2);
-
-        glTranslatef(-camera.pos.x, -camera.pos.y, -camera.pos.z + 1);
-        glutSolidCube(1.0);
     glEnd();
 
     glutSwapBuffers();
@@ -323,9 +344,19 @@ void camera_see() {
     glTranslatef(-camera.pos.x, -camera.pos.y, -camera.pos.z);
 }
 
+void mouse_click(int button, int state, int x, int y) {
+
+    // TODO: shoot things
+    switch (button) {
+    case GLUT_LEFT_BUTTON:
+        std::cout << "Clicked at " << x << ", " << y << std::endl;
+    }
+}
+
 void mouse_motion(int x, int y) {
 
     if (first_mouse) {
+        camera.pitch = camera.yaw = camera.roll = 0;
         last_x = x;
         last_y = y;
         first_mouse = false;
@@ -349,6 +380,12 @@ void mouse_motion(int x, int y) {
 
     camera.yaw += dx;
     camera.pitch += dy;
+
+    if (camera.pitch < -90)
+        camera.pitch = -90;
+
+    if (camera.pitch > 90)
+        camera.pitch = 90;
 
     glutPostRedisplay();
 
