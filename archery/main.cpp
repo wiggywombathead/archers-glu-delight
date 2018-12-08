@@ -12,6 +12,7 @@
 #define WIN_H 640
 
 int init();
+void idle();
 void display();
 void keyboard(unsigned char, int, int);
 void special(int, int, int);
@@ -19,13 +20,13 @@ void mouse_click(int, int, int, int);
 void mouse_motion(int, int);
 void reshape(int, int);
 
+void camera_see();
+
 void cross(const float *a, const float *b, float *n) {
     n[0] = (a[1] * b[2]) - (a[2] * b[1]);
     n[1] = (a[2] * b[0]) - (a[0] * b[2]);
     n[2] = (a[0] * b[1]) - (a[1] * b[0]);
 }
-
-void camera_see();
 
 // angle of teapot
 float g_angle_y, g_angle_z;
@@ -42,6 +43,9 @@ int last_y = 320;
 
 size_t g_target;    // target
 size_t g_earth;     // the ground
+
+clock_t prev_tick, curr_tick;
+float dt;
 
 struct light_t {
     size_t name;
@@ -111,18 +115,55 @@ void set_light(const light_t &light) {
     glEnable(light.name);
 }
 
-struct position_t {
-    float x, y, z, w;
+struct vec3 {
+    float x, y, z;
+    vec3 operator*(const float& k) {
+        struct vec3 res;
+        res.x = x * k;
+        res.y = y * k;
+        res.z = z * k;
+        return res;
+    }
+    vec3& operator+=(const vec3& v) {
+        x += v.x;
+        y += v.y;
+        z += v.z;
+        return *this;
+    }
+    vec3& operator+=(const float k) {
+        x += k;
+        y += k;
+        z += k;
+        return *this;
+    }
+    vec3& operator*=(const float k) {
+        x *= k;
+        y *= k;
+        z *= k;
+        return *this;
+    }
+};
+
+vec3 gravity = {0, -9.81, 0};
+
+struct projectile_t {
+    vec3 pos;
+    vec3 vel;
 };
 
 struct camera_t {
-    position_t pos;
+    vec3 pos;
     float reference[3];
     float up[3];
 
     float pitch;
     float yaw;
     float roll;
+};
+
+projectile_t projectile = {
+    {0, 0, 0},
+    {0, 0, 0}
 };
 
 camera_t camera = {
@@ -204,6 +245,7 @@ int main(int argc, char *argv[]) {
     glutPassiveMotionFunc(mouse_motion);
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
+    // glutIdleFunc(idle);
 
     init();
 
@@ -225,7 +267,37 @@ int init() {
     g_target = make_target();
     g_earth = make_earth();
 
+    projectile = {
+        {0, 0, 0},
+        {0, 0, 0}
+    };
+
     return 0;
+}
+
+void simulate_physics() {
+
+    prev_tick, curr_tick;
+    curr_tick = clock();
+
+    dt = (float) (curr_tick - prev_tick) / CLOCKS_PER_SEC;
+
+    vec3 dv = gravity * dt;
+
+    projectile.vel += dv;
+
+    vec3 diff = projectile.vel * dt;
+    projectile.pos += projectile.vel;
+
+    if (projectile.pos.y <= 0) {
+        projectile.pos.y = 0;
+        projectile.vel = {0,0,0};
+    }
+
+}
+
+void idle() {
+    simulate_physics();
 }
 
 void display() {
@@ -244,23 +316,35 @@ void display() {
 
     glPushMatrix();
 
+        // draw weapon
         glPushMatrix();
-            glTranslatef(0.4, -0.3, -0.8);
+            glTranslatef(0.4, -0.3, -0.7);
             glRotatef(90, 0, 1, 0);
             set_material(porcelain);
             glutSolidTeapot(0.15);
         glPopMatrix();
         
+        // translate everything to camera position/view
         camera_see();
 
-        set_material(brass);
+        // draw the target
         glPushMatrix();
             glRotatef(90, 0, 1, 0);
             glTranslatef(0, 2, 0);
             glScalef(0.5f, 0.5f, 0.5f);
+            set_material(brass);
             glCallList(g_target);
         glPopMatrix();
 
+        // simulate physics
+        simulate_physics();
+
+        glPushMatrix();
+            glTranslatef(projectile.pos.x, projectile.pos.y, projectile.pos.z);
+            glutSolidCube(0.2);
+        glPopMatrix();
+
+        // draw the ground
         glPushMatrix();
             glScalef(10, 10, 10);
             set_material(flat);
@@ -330,10 +414,14 @@ void special(int k, int, int) {
     glutPostRedisplay();
 }
 
-void normalize(float *v, float *n) {
-    float len = sqrt(pow(v[0],2) + pow(v[1], 2) + pow(v[2], 2));
-    for (size_t i = 0; i < 2; i++)
-        n[i] = v[i] / len;
+vec3 normalize(vec3 v) {
+    float len = sqrt(pow(v.x, 2) + pow(v.y, 2) + pow(v.z, 2));
+    vec3 norm = {
+        v.x / len,
+        v.y / len,
+        v.z / len
+    };
+    return norm;
 }
 
 void camera_see() {
@@ -346,10 +434,13 @@ void camera_see() {
 
 void mouse_click(int button, int state, int x, int y) {
 
-    // TODO: shoot things
     switch (button) {
     case GLUT_LEFT_BUTTON:
-        std::cout << "Clicked at " << x << ", " << y << std::endl;
+        if (state == GLUT_UP) {
+            projectile.pos = camera.pos;
+            // TODO: throw object in direction of camera
+            vec3 dir = normalize(camera.pos);
+        }
     }
 }
 
