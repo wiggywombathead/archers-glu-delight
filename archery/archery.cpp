@@ -10,6 +10,9 @@
 
 #define WIN_W 640
 #define WIN_H 640
+#define FRAME_RATE 60
+
+const int FRAME_INTERVAL = 1 * 1000 / FRAME_RATE;
 
 int init();
 void idle();
@@ -142,6 +145,11 @@ struct vec3 {
         z *= k;
         return *this;
     }
+    /*
+    std::ostream& operator<<(std::ostream &strm, const vec3 &v) {
+        return strm << "<" << v.x << ", " << v.y << "," << v.z << ">";
+    }
+    */
 };
 
 vec3 gravity = {0, -9.81, 0};
@@ -277,10 +285,10 @@ int init() {
 
 void simulate_physics() {
 
-    prev_tick, curr_tick;
+    prev_tick = curr_tick;
     curr_tick = clock();
 
-    dt = (float) (curr_tick - prev_tick) / CLOCKS_PER_SEC;
+    dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
 
     vec3 dv = gravity * dt;
 
@@ -291,9 +299,10 @@ void simulate_physics() {
 
     if (projectile.pos.y <= 0) {
         projectile.pos.y = 0;
-        projectile.vel = {0,0,0};
+        projectile.vel *= -0.5;
     }
 
+    glutPostRedisplay();
 }
 
 void idle() {
@@ -341,7 +350,7 @@ void display() {
 
         glPushMatrix();
             glTranslatef(projectile.pos.x, projectile.pos.y, projectile.pos.z);
-            glutSolidCube(0.2);
+            glutSolidSphere(0.1, 128, 128);
         glPopMatrix();
 
         // draw the ground
@@ -437,9 +446,8 @@ void mouse_click(int button, int state, int x, int y) {
     switch (button) {
     case GLUT_LEFT_BUTTON:
         if (state == GLUT_UP) {
-            projectile.pos = camera.pos;
-            // TODO: throw object in direction of camera
-            vec3 dir = normalize(camera.pos);
+            projectile.pos = {0,0,0};
+            projectile.vel = { 0, 1, 0};
         }
     }
 }
