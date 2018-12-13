@@ -7,3 +7,6 @@
 - [ ] Collisions
 - [ ] Arrow head in direction of travel
 - [ ] Scoring
+- [ ] Moving targets
+- [ ] Nock arrow and draw string (varying power)
+- [ ] Smooth walking?
