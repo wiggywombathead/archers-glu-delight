@@ -31,14 +31,11 @@ void cross(const float *a, const float *b, float *n) {
     n[2] = (a[0] * b[1]) - (a[1] * b[0]);
 }
 
-// angle of teapot
-float g_angle_y, g_angle_z;
+bool first_mouse = true;    // avoid jump when first entering
+bool warped = false;        // avoid jump when warping mouse back
+bool escape_mouse = false;
 
-// avoid jump when first entering
-bool first_mouse = true;
-
-// avoid jump when warping mouse back
-bool warped = false;
+bool english = false;   // weapon is teapot
 
 // keep track of last mouse position
 int last_x = 320;
@@ -49,6 +46,21 @@ size_t g_earth;     // the ground
 
 clock_t prev_tick, curr_tick;
 float dt;
+
+enum bow_parts {
+    HANDLE = 0,
+    LIMB = 1,
+    TIP = 2,
+    STRING = 3,
+    NUM_PARTS = 4
+};
+
+size_t g_bow;
+float bow_handle_len = 0.4f;
+float bow_limb_len = 0.2f;
+float bow_tip_len = 0.1f;
+float bow_curve = 15.0f;
+float bow_str_len;
 
 struct light_t {
     size_t name;
@@ -175,14 +187,14 @@ projectile_t projectile = {
 };
 
 camera_t camera = {
-    {0, 2, 3},
+    {0, 2, 10},
     {0, 0, 0},
     {0, 1, 0},
 
     0.0f, 0.0f, 0.0f
 };
 
-void draw_capped_cylinder(const float r, const float h, const int slices, const int stacks) {
+void draw_capped_cylinder(const float r, const float h, const int slices=32, const int stacks=32) {
     GLUquadricObj *obj = gluNewQuadric();
     gluQuadricNormals(obj, GLU_SMOOTH);
 
@@ -207,6 +219,41 @@ size_t make_target() {
 
     glNewList(handle, GL_COMPILE);
         draw_capped_cylinder(2.0f, 0.1f, 32, 32);
+    glEndList();
+
+    return handle;
+}
+
+size_t make_bow() {
+
+    size_t handle = glGenLists(NUM_PARTS);
+
+    glNewList(handle + HANDLE, GL_COMPILE);
+        glPushMatrix();
+            glRotatef(-90, 1, 0, 0);
+            draw_capped_cylinder(0.01, bow_handle_len);
+        glPopMatrix();
+    glEndList();
+
+    glNewList(handle + LIMB, GL_COMPILE);
+        glPushMatrix();
+            glRotatef(-90, 1, 0, 0);
+            draw_capped_cylinder(0.01, bow_limb_len);
+        glPopMatrix();
+    glEndList();
+
+    glNewList(handle + TIP, GL_COMPILE);
+        glPushMatrix();
+            glRotatef(-90, 1, 0, 0);
+            draw_capped_cylinder(0.01, bow_tip_len);
+        glPopMatrix();
+    glEndList();
+
+    glNewList(handle + STRING, GL_COMPILE);
+        glPushMatrix();
+            glRotatef(-90, 1, 0, 0);
+            draw_capped_cylinder(0.005, bow_str_len);
+        glPopMatrix();
     glEndList();
 
     return handle;
@@ -272,13 +319,15 @@ int init() {
 
     glutSetCursor(GLUT_CURSOR_NONE);
 
+    bow_str_len = 2 * (
+            bow_handle_len / 2 + 
+            bow_limb_len * cos(bow_curve * M_PI / 180) + 
+            bow_tip_len * cos(2 * bow_curve * M_PI / 180)
+    );
+
     g_target = make_target();
     g_earth = make_earth();
-
-    projectile = {
-        {0, 0, 0},
-        {0, 0, 0}
-    };
+    g_bow = make_bow();
 
     return 0;
 }
@@ -299,7 +348,10 @@ void simulate_physics() {
 
     if (projectile.pos.y <= 0) {
         projectile.pos.y = 0;
-        projectile.vel *= -0.5;
+        projectile.vel.y *= -0.5;
+
+        projectile.vel.x *= 0.8;
+        projectile.vel.z *= 0.8;
     }
 
     glutPostRedisplay();
@@ -309,13 +361,70 @@ void idle() {
     simulate_physics();
 }
 
+void draw_weapon() {
+
+    float down = -(bow_limb_len * cos(bow_curve * M_PI / 180) + bow_tip_len * cos(2 * bow_curve * M_PI / 180));
+    float back = -(bow_limb_len * sin(bow_curve * M_PI / 180) + bow_tip_len * sin(2 * bow_curve * M_PI / 180));
+
+    glPushMatrix();
+
+    if (!english) {
+        glTranslatef(0.4, -0.2, -1);
+        glRotatef(15, 0, 1, 0);
+        glCallList(g_bow + HANDLE);
+
+        // draw top half of bow
+        glPushMatrix();
+            glTranslatef(0, bow_handle_len, 0);
+            glRotatef(bow_curve, 1, 0, 0);
+            glCallList(g_bow + LIMB);
+
+            glPushMatrix();
+                glTranslatef(0, bow_limb_len, 0);
+                glRotatef(bow_curve, 1, 0, 0);
+                glCallList(g_bow + TIP);
+            glPopMatrix();
+        glPopMatrix();
+
+        glRotatef(180, 1, 0, 0);
+
+        // draw bottom half of bow
+        glPushMatrix();
+            glTranslatef(0, 0, 0);
+            glRotatef(-bow_curve, 1, 0, 0);
+            glCallList(g_bow + LIMB);
+
+            glPushMatrix();
+                glTranslatef(0, bow_limb_len, 0);
+                glRotatef(-bow_curve, 1, 0, 0);
+                glCallList(g_bow + TIP);
+            glPopMatrix();
+        glPopMatrix();
+
+        // draw bow string
+        glPushMatrix();
+            glTranslatef(0, -bow_str_len - down, back);
+            glCallList(g_bow + STRING);
+        glPopMatrix();
+    } else {
+        glTranslatef(0.4, -0.3, -0.7);
+        glRotatef(90, 0, 1, 0);
+        set_material(porcelain);
+        glutSolidTeapot(0.15);
+    }
+
+    glPopMatrix();
+}
+        
+
+
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(75, 1, 0.2, 50);
+    gluPerspective(75, 1, 0.4, 100);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -326,16 +435,11 @@ void display() {
     glPushMatrix();
 
         // draw weapon
-        glPushMatrix();
-            glTranslatef(0.4, -0.3, -0.7);
-            glRotatef(90, 0, 1, 0);
-            set_material(porcelain);
-            glutSolidTeapot(0.15);
-        glPopMatrix();
-        
+        draw_weapon();
+
         // translate everything to camera position/view
         camera_see();
-
+        
         // draw the target
         glPushMatrix();
             glRotatef(90, 0, 1, 0);
@@ -344,6 +448,7 @@ void display() {
             set_material(brass);
             glCallList(g_target);
         glPopMatrix();
+
 
         // simulate physics
         simulate_physics();
@@ -355,7 +460,7 @@ void display() {
 
         // draw the ground
         glPushMatrix();
-            glScalef(10, 10, 10);
+            glScalef(25, 25, 25);
             set_material(flat);
             glCallList(g_earth);
         glPopMatrix();
@@ -398,6 +503,16 @@ void keyboard(unsigned char k, int, int) {
         camera.pos.x += 0.2 * sin((90+camera.yaw) * M_PI / 180);
         camera.pos.z -= 0.2 * cos((90+camera.yaw) * M_PI / 180);
         break;
+    case 'm':
+        escape_mouse = !escape_mouse;
+        if (escape_mouse)
+            glutSetCursor(GLUT_CURSOR_INHERIT);
+        else
+            glutSetCursor(GLUT_CURSOR_NONE);
+        break;
+    case 't':
+        english = !english;
+        break;
     }
 
     glutPostRedisplay();
@@ -407,16 +522,12 @@ void special(int k, int, int) {
 
     switch (k) {
     case GLUT_KEY_LEFT:
-        g_angle_y -= 2.0f;
         break;
     case GLUT_KEY_RIGHT:
-        g_angle_y += 2.0f;
         break;
     case GLUT_KEY_UP:
-        g_angle_z += 2.0f;
         break;
     case GLUT_KEY_DOWN:
-        g_angle_z -= 2.0f;
         break;
     }
 
@@ -446,8 +557,18 @@ void mouse_click(int button, int state, int x, int y) {
     switch (button) {
     case GLUT_LEFT_BUTTON:
         if (state == GLUT_UP) {
-            projectile.pos = {0,0,0};
-            projectile.vel = { 0, 1, 0};
+            projectile.pos = {
+                camera.pos.x + 0.4f,
+                camera.pos.y - 0.3f,
+                camera.pos.z - 0.7f
+            };
+
+            projectile.vel = {
+                sin(camera.yaw * M_PI / 180),
+                -sin(camera.pitch * M_PI / 180),
+                -cos(camera.yaw * M_PI / 180)
+            };
+            projectile.vel *= 2.8;
         }
     }
 }
@@ -490,8 +611,11 @@ void mouse_motion(int x, int y) {
 
     if (last_x > 3 * WIN_W / 4 || last_x < WIN_W / 4 || 
             last_y > 3 * WIN_H / 4|| last_y < WIN_H / 4) {
-        warped = true;
-        glutWarpPointer(WIN_W / 2, WIN_H / 2);
+
+        if (!escape_mouse) {
+            warped = true;
+            glutWarpPointer(WIN_W / 2, WIN_H / 2);
+        }
     }
 }
 
@@ -499,5 +623,5 @@ void reshape(int w, int h) {
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(75, 1, 0.2, 50);
+    gluPerspective(75, 1, 0.4, 100);
 }
