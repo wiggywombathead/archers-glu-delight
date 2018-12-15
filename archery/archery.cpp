@@ -8,6 +8,10 @@
 #include <GL/glut.h>
 #endif
 
+#include "util.h"
+#include "bow.h"
+#include "arrow.h"
+
 #define WIN_W 640
 #define WIN_H 640
 #define FRAME_RATE 60
@@ -47,13 +51,23 @@ size_t g_earth;     // the ground
 clock_t prev_tick, curr_tick;
 float dt;
 
-enum bow_parts {
+enum {
     HANDLE = 0,
     LIMB = 1,
     TIP = 2,
     STRING = 3,
-    NUM_PARTS = 4
+    BOW_PARTS = 4
 };
+
+enum ArrowParts {
+    SHAFT = 0,
+    HEAD = 1,
+    FLETCHING = 2,
+    ARR_PARTS = 3
+};
+
+Bow bow(0.02f, 0.8f);
+Arrow arrow(0.01f, 0.2f);
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -61,6 +75,9 @@ float bow_limb_len = 0.2f;
 float bow_tip_len = 0.1f;
 float bow_curve = 15.0f;
 float bow_str_len;
+
+size_t g_arrow;
+float arrow_len;
 
 struct light_t {
     size_t name;
@@ -130,40 +147,6 @@ void set_light(const light_t &light) {
     glEnable(light.name);
 }
 
-struct vec3 {
-    float x, y, z;
-    vec3 operator*(const float& k) {
-        struct vec3 res;
-        res.x = x * k;
-        res.y = y * k;
-        res.z = z * k;
-        return res;
-    }
-    vec3& operator+=(const vec3& v) {
-        x += v.x;
-        y += v.y;
-        z += v.z;
-        return *this;
-    }
-    vec3& operator+=(const float k) {
-        x += k;
-        y += k;
-        z += k;
-        return *this;
-    }
-    vec3& operator*=(const float k) {
-        x *= k;
-        y *= k;
-        z *= k;
-        return *this;
-    }
-    /*
-    std::ostream& operator<<(std::ostream &strm, const vec3 &v) {
-        return strm << "<" << v.x << ", " << v.y << "," << v.z << ">";
-    }
-    */
-};
-
 vec3 gravity = {0, -9.81, 0};
 
 struct projectile_t {
@@ -194,25 +177,6 @@ camera_t camera = {
     0.0f, 0.0f, 0.0f
 };
 
-void draw_capped_cylinder(const float r, const float h, const int slices=32, const int stacks=32) {
-    GLUquadricObj *obj = gluNewQuadric();
-    gluQuadricNormals(obj, GLU_SMOOTH);
-
-    gluCylinder(obj, r, r, h, slices, stacks);
-
-    // top cap
-    glPushMatrix();
-        glTranslatef(0, 0, h);
-        gluDisk(obj, 0, r, slices, stacks);
-    glPopMatrix();
-
-    // bottom cap
-    glPushMatrix();
-        glRotatef(180, 1, 0, 0);
-        gluDisk(obj, 0, r, slices, stacks);
-    glPopMatrix();
-}
-
 size_t make_target() {
 
     size_t handle = glGenLists(1);
@@ -224,9 +188,22 @@ size_t make_target() {
     return handle;
 }
 
+size_t make_arrow() {
+
+    size_t handle = glGenLists(ARR_PARTS);
+
+    glNewList(handle + SHAFT, GL_COMPILE);
+        glPushMatrix();
+            draw_capped_cylinder(0.008, arrow_len);
+        glPopMatrix();
+    glEndList();
+
+    return handle;
+}
+
 size_t make_bow() {
 
-    size_t handle = glGenLists(NUM_PARTS);
+    size_t handle = glGenLists(BOW_PARTS);
 
     glNewList(handle + HANDLE, GL_COMPILE);
         glPushMatrix();
@@ -319,6 +296,8 @@ int init() {
 
     glutSetCursor(GLUT_CURSOR_NONE);
 
+    bow.make_handle();
+
     bow_str_len = 2 * (
             bow_handle_len / 2 + 
             bow_limb_len * cos(bow_curve * M_PI / 180) + 
@@ -371,6 +350,10 @@ void draw_weapon() {
     if (!english) {
         glTranslatef(0.4, -0.2, -1);
         glRotatef(15, 0, 1, 0);
+
+        glCallList(bow.handle);
+        
+        /*
         glCallList(g_bow + HANDLE);
 
         // draw top half of bow
@@ -406,6 +389,7 @@ void draw_weapon() {
             glTranslatef(0, -bow_str_len - down, back);
             glCallList(g_bow + STRING);
         glPopMatrix();
+        */
     } else {
         glTranslatef(0.4, -0.3, -0.7);
         glRotatef(90, 0, 1, 0);

@@ -10,3 +10,4 @@
 - [ ] Moving targets
 - [ ] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
+- [ ] Smoother bow (adjustable with # segments)

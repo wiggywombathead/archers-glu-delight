@@ -1,13 +1,19 @@
 INC = -L/usr/X11R6/lib
 LDLIBS = -lglut -lGL -lGLU -lX11 -lm 
 
-CPPFLAGS = -O3 
+CXX = g++
+CXXFLAGS = -Wall -g -O3
 LDFLAGS = $(CPPFLAGS) $(INC)
 
-TARGETS =
-SRCS = 
-OBJS = $(SRCS:.cpp=.o)
+SRCS = $(wildcard *.cpp)
+OBJS = $(SRCS:%.cpp=%.o)
 
-CXX = g++
+%: %.o
+	$(CXX) $(LDFLAGS) $(LDLIBS) $< -o $@
 
-default: $(TARGETS)
+%.o: %.cpp
+	$(CXX) $(LDFLAGS) $(LDLIBS) -c $<
+
+all: $(OBJS)
+	$(CXX) $(LDFLAGS) $(LDLIBS) -o archery $(OBJS)
+	@rm *.o
