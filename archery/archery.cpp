@@ -9,6 +9,7 @@
 #endif
 
 #include "util.h"
+#include "camera.h"
 #include "bow.h"
 #include "arrow.h"
 
@@ -26,8 +27,6 @@ void special(int, int, int);
 void mouse_click(int, int, int, int);
 void mouse_motion(int, int);
 void reshape(int, int);
-
-void camera_see();
 
 void cross(const float *a, const float *b, float *n) {
     n[0] = (a[1] * b[2]) - (a[2] * b[1]);
@@ -48,7 +47,7 @@ int last_y = 320;
 size_t g_target;    // target
 size_t g_earth;     // the ground
 
-clock_t prev_tick, curr_tick;
+extern clock_t prev_tick, curr_tick;
 float dt;
 
 enum {
@@ -68,6 +67,16 @@ enum ArrowParts {
 
 Bow bow(0.02f, 0.8f);
 Arrow arrow(0.01f, 0.2f);
+
+Player player = {
+    {0, 2, 5},
+    0.0f,
+    0.0f,
+    0.0f,
+
+    bow,
+    arrow
+};
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -147,34 +156,15 @@ void set_light(const light_t &light) {
     glEnable(light.name);
 }
 
-vec3 gravity = {0, -9.81, 0};
-
 struct projectile_t {
     vec3 pos;
     vec3 vel;
 };
 
-struct camera_t {
-    vec3 pos;
-    float reference[3];
-    float up[3];
-
-    float pitch;
-    float yaw;
-    float roll;
-};
 
 projectile_t projectile = {
     {0, 0, 0},
     {0, 0, 0}
-};
-
-camera_t camera = {
-    {0, 2, 10},
-    {0, 0, 0},
-    {0, 1, 0},
-
-    0.0f, 0.0f, 0.0f
 };
 
 size_t make_target() {
@@ -297,6 +287,10 @@ int init() {
     glutSetCursor(GLUT_CURSOR_NONE);
 
     bow.make_handle();
+    arrow.make_handle();
+
+    player.bow = bow;
+    player.arrow = arrow;
 
     bow_str_len = 2 * (
             bow_handle_len / 2 + 
@@ -311,6 +305,7 @@ int init() {
     return 0;
 }
 
+/*
 void simulate_physics() {
 
     prev_tick = curr_tick;
@@ -335,9 +330,10 @@ void simulate_physics() {
 
     glutPostRedisplay();
 }
+*/
 
 void idle() {
-    simulate_physics();
+    // simulate_physics();
 }
 
 void draw_weapon() {
@@ -348,10 +344,6 @@ void draw_weapon() {
     glPushMatrix();
 
     if (!english) {
-        glTranslatef(0.4, -0.2, -1);
-        glRotatef(15, 0, 1, 0);
-
-        glCallList(bow.handle);
         
         /*
         glCallList(g_bow + HANDLE);
@@ -419,10 +411,19 @@ void display() {
     glPushMatrix();
 
         // draw weapon
-        draw_weapon();
+        bow.draw();
+        
+        if (!arrow.fired) {
+            arrow.pos = player.pos;
+            glPushMatrix();
+                glTranslatef(0.4, -0.2, -1);
+                glRotatef(15, 0, 1, 0);
+                arrow.draw();
+            glPopMatrix();
+        }
 
         // translate everything to camera position/view
-        camera_see();
+        player.see();
         
         // draw the target
         glPushMatrix();
@@ -433,9 +434,14 @@ void display() {
             glCallList(g_target);
         glPopMatrix();
 
+        // simulate arrows
+        if (arrow.fired) {
+            arrow.simulate();
+            arrow.draw();
+        }
 
         // simulate physics
-        simulate_physics();
+        // simulate_physics();
 
         glPushMatrix();
             glTranslatef(projectile.pos.x, projectile.pos.y, projectile.pos.z);
@@ -472,20 +478,20 @@ void keyboard(unsigned char k, int, int) {
     case 'q':
         exit(1);
     case 'w':
-        camera.pos.x += 0.2 * sin(camera.yaw * M_PI / 180);
-        camera.pos.z -= 0.2 * cos(camera.yaw * M_PI / 180);
+        player.pos.x += 0.2 * sin(player.yaw * M_PI / 180);
+        player.pos.z -= 0.2 * cos(player.yaw * M_PI / 180);
         break;
     case 's':
-        camera.pos.x -= 0.2 * sin(camera.yaw * M_PI / 180);
-        camera.pos.z += 0.2 * cos(camera.yaw * M_PI / 180);
+        player.pos.x -= 0.2 * sin(player.yaw * M_PI / 180);
+        player.pos.z += 0.2 * cos(player.yaw * M_PI / 180);
         break;
     case 'a':
-        camera.pos.x -= 0.2 * sin((90+camera.yaw) * M_PI / 180);
-        camera.pos.z += 0.2 * cos((90+camera.yaw) * M_PI / 180);
+        player.pos.x -= 0.2 * sin((90+player.yaw) * M_PI / 180);
+        player.pos.z += 0.2 * cos((90+player.yaw) * M_PI / 180);
         break;
     case 'd':
-        camera.pos.x += 0.2 * sin((90+camera.yaw) * M_PI / 180);
-        camera.pos.z -= 0.2 * cos((90+camera.yaw) * M_PI / 180);
+        player.pos.x += 0.2 * sin((90+player.yaw) * M_PI / 180);
+        player.pos.z -= 0.2 * cos((90+player.yaw) * M_PI / 180);
         break;
     case 'm':
         escape_mouse = !escape_mouse;
@@ -528,31 +534,23 @@ vec3 normalize(vec3 v) {
     return norm;
 }
 
-void camera_see() {
-    glRotatef(camera.pitch, 1.0f, 0.0f, 0.0f);  // rotate around x for pitch
-    glRotatef(camera.yaw, 0.0f, 1.0f, 0.0f);    // rotate around y for yaw
-
-    // translate screen to position of camera
-    glTranslatef(-camera.pos.x, -camera.pos.y, -camera.pos.z);
-}
-
 void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
     case GLUT_LEFT_BUTTON:
         if (state == GLUT_UP) {
-            projectile.pos = {
-                camera.pos.x + 0.4f,
-                camera.pos.y - 0.3f,
-                camera.pos.z - 0.7f
+            arrow.pos = {
+                player.pos.x,
+                player.pos.y,
+                player.pos.z
             };
 
-            projectile.vel = {
-                sin(camera.yaw * M_PI / 180),
-                -sin(camera.pitch * M_PI / 180),
-                -cos(camera.yaw * M_PI / 180)
+            arrow.vel = {
+                sin(player.yaw * M_PI / 180),
+                -sin(player.pitch * M_PI / 180),
+                -cos(player.yaw * M_PI / 180)
             };
-            projectile.vel *= 2.8;
+            arrow.vel *= 2.8;
         }
     }
 }
@@ -560,7 +558,7 @@ void mouse_click(int button, int state, int x, int y) {
 void mouse_motion(int x, int y) {
 
     if (first_mouse) {
-        camera.pitch = camera.yaw = camera.roll = 0;
+        player.pitch = player.yaw = player.roll = 0;
         last_x = x;
         last_y = y;
         first_mouse = false;
@@ -582,14 +580,14 @@ void mouse_motion(int x, int y) {
     dx *= sensitivity;
     dy *= sensitivity;
 
-    camera.yaw += dx;
-    camera.pitch += dy;
+    player.yaw += dx;
+    player.pitch += dy;
 
-    if (camera.pitch < -90)
-        camera.pitch = -90;
+    if (player.pitch < -90)
+        player.pitch = -90;
 
-    if (camera.pitch > 90)
-        camera.pitch = 90;
+    if (player.pitch > 90)
+        player.pitch = 90;
 
     glutPostRedisplay();
 

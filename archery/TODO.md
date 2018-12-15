@@ -1,7 +1,9 @@
 # TODO
 - [ ] Regulate/display FPS
 - [x] Make bow
-- [ ] Make arrow
+- [x] Make arrow
+- [x] Classes
+- [ ] Revert to classless?
 - [ ] Textures
 - [ ] Fire straight up
 - [ ] Collisions
@@ -11,3 +13,4 @@
 - [ ] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
 - [ ] Smoother bow (adjustable with # segments)
+- [ ] Get arrow to simulate

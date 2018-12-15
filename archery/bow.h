@@ -11,6 +11,7 @@ public:
 
     Bow(float t, float l);
     void make_handle();
+    void draw();
 }; 
 
 #endif

@@ -18,3 +18,11 @@ void Bow::make_handle() {
         glPopMatrix();
     glEndList();
 }
+
+void Bow::draw() {
+    glPushMatrix();
+        glTranslatef(0.4, -0.2, -1);
+        glRotatef(15, 0, 1, 0);
+        glCallList(handle);
+    glPopMatrix();
+}

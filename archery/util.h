@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <ctime>
+
 struct vec3 {
     float x, y, z;
     vec3 operator*(const float& k) {
