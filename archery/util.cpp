@@ -28,4 +28,3 @@ vec3 cross(vec3 a, vec3 b) {
     };
     return res;
 }
-

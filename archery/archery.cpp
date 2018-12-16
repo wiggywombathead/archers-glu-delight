@@ -506,16 +506,6 @@ void special(int k, int, int) {
     glutPostRedisplay();
 }
 
-vec3 normalize(vec3 v) {
-    float len = sqrt(pow(v.x, 2) + pow(v.y, 2) + pow(v.z, 2));
-    vec3 norm = {
-        v.x / len,
-        v.y / len,
-        v.z / len
-    };
-    return norm;
-}
-
 void fire_arrow() {
     arrow.state = FIRED;
     arrow.pos = player.pos;

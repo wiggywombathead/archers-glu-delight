@@ -64,15 +64,16 @@ void Arrow::draw_nocked() {
 
 void Arrow::draw_flight() {
 
-    vec3 dir = {0, 0, 1};
-    float theta = vel * dir / (vel.len() * dir.len());
-    theta = acos(theta);
+    //vec3 dir = {0, 0, 1};
 
-    vec3 plane = cross(dir, vel);
+    //vec3 x = pos.normalize();
+
+    //vec3 y = {0, 1, 0};
+    //y = 
 
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
-        glRotatef(theta, plane.x, plane.y, plane.z);
+        //glRotatef(theta, plane.x, plane.y, plane.z);
         glCallList(handle);
     glPopMatrix();
     glutPostRedisplay();

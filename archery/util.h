@@ -7,10 +7,17 @@
 struct vec3 {
     float x, y, z;
     vec3 operator*(const float& k) {
-        struct vec3 res;
+        vec3 res;
         res.x = x * k;
         res.y = y * k;
         res.z = z * k;
+        return res;
+    }
+    vec3 operator/(const float &k) {
+        vec3 res;
+        res.x = x / k;
+        res.y = y / k;
+        res.z = z / k;
         return res;
     }
     vec3& operator+=(const vec3& v) {
@@ -42,9 +49,19 @@ struct vec3 {
         return strm << "<" << v.x << ", " << v.y << "," << v.z << ">";
     }
     */
+    vec3 normalize() {
+        float l = len();
+        vec3 norm = {
+            x / l,
+            y / l,
+            z / l
+        };
+        return norm;
+    }
 };
 
 void draw_capped_cylinder(const float r, const float h, const int slices=32, const int stacks=32);
+
 vec3 cross(vec3, vec3);
 
 #endif
