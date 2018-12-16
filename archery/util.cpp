@@ -20,3 +20,12 @@ void draw_capped_cylinder(const float r, const float h, const int slices, const 
     glPopMatrix();
 }
 
+vec3 cross(vec3 a, vec3 b) {
+    vec3 res = {
+        (a.y * b.z) - (a.z * b.y),
+        (a.z * b.x) - (a.x * b.z),
+        (a.x * b.y) - (a.y * b.x)
+    };
+    return res;
+}
+

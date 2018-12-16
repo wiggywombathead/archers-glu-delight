@@ -4,12 +4,18 @@
 #include <cstddef>
 #include "util.h"
 
+enum State {
+    STASHED,
+    NOCKED,
+    FIRED
+};
+
 class Arrow {
 public:
     size_t handle;
     float thickness;
     float length;
-    bool fired;
+    State state;
 
     vec3 pos;
     vec3 vel;
@@ -17,7 +23,8 @@ public:
     Arrow(float t, float l);
     void make_handle();
     void simulate();
-    void draw();
+    void draw_nocked();
+    void draw_flight();
 };
 
 #endif

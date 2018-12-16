@@ -13,4 +13,5 @@
 - [ ] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
 - [ ] Smoother bow (adjustable with # segments)
-- [ ] Get arrow to simulate
+- [x] Get arrow to simulate
+- [ ] Slow down time

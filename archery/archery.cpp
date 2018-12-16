@@ -28,12 +28,6 @@ void mouse_click(int, int, int, int);
 void mouse_motion(int, int);
 void reshape(int, int);
 
-void cross(const float *a, const float *b, float *n) {
-    n[0] = (a[1] * b[2]) - (a[2] * b[1]);
-    n[1] = (a[2] * b[0]) - (a[0] * b[2]);
-    n[2] = (a[0] * b[1]) - (a[1] * b[0]);
-}
-
 bool first_mouse = true;    // avoid jump when first entering
 bool warped = false;        // avoid jump when warping mouse back
 bool escape_mouse = false;
@@ -73,9 +67,6 @@ Player player = {
     0.0f,
     0.0f,
     0.0f,
-
-    bow,
-    arrow
 };
 
 size_t g_bow;
@@ -235,13 +226,14 @@ size_t make_earth() {
         { -1, 0, 1 }
     };
 
-    float norm[3];
-    cross(verts[0], verts[1], norm);
+    vec3 v0 = {1, 0, 1};
+    vec3 v1 = {1, 0, -1};
+    vec3 norm = cross(v0, v1);
 
     size_t handle = glGenLists(1);
 
     glNewList(handle, GL_COMPILE);
-        glNormal3f(norm[0], norm[1], norm[2]);
+        glNormal3f(norm.x, norm.y, norm.z);
         glBegin(GL_QUADS);
             for (size_t i = 0; i < 4; i++)
                 glVertex3fv(verts[i]);
@@ -288,9 +280,6 @@ int init() {
 
     bow.make_handle();
     arrow.make_handle();
-
-    player.bow = bow;
-    player.arrow = arrow;
 
     bow_str_len = 2 * (
             bow_handle_len / 2 + 
@@ -392,8 +381,6 @@ void draw_weapon() {
     glPopMatrix();
 }
         
-
-
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -412,33 +399,28 @@ void display() {
 
         // draw weapon
         bow.draw();
-        
-        if (!arrow.fired) {
-            arrow.pos = player.pos;
-            glPushMatrix();
-                glTranslatef(0.4, -0.2, -1);
-                glRotatef(15, 0, 1, 0);
-                arrow.draw();
-            glPopMatrix();
-        }
+
+        set_material(brass);
+        if (arrow.state == NOCKED)
+            arrow.draw_nocked();
 
         // translate everything to camera position/view
         player.see();
-        
+
+        // simulate arrows
+        if (arrow.state == FIRED) {
+            arrow.simulate();
+            arrow.draw_flight();
+        }
+
         // draw the target
         glPushMatrix();
             glRotatef(90, 0, 1, 0);
             glTranslatef(0, 2, 0);
             glScalef(0.5f, 0.5f, 0.5f);
             set_material(brass);
-            glCallList(g_target);
+            // glCallList(g_target);
         glPopMatrix();
-
-        // simulate arrows
-        if (arrow.fired) {
-            arrow.simulate();
-            arrow.draw();
-        }
 
         // simulate physics
         // simulate_physics();
@@ -534,23 +516,38 @@ vec3 normalize(vec3 v) {
     return norm;
 }
 
+void fire_arrow() {
+    arrow.state = FIRED;
+    arrow.pos = player.pos;
+    arrow.vel = {
+        sin(player.yaw * M_PI / 180),
+        -sin(player.pitch * M_PI / 180),
+        -cos(player.yaw * M_PI / 180)
+    };
+    arrow.vel *= 0.5f;
+}
+
+void nock_arrow() {
+    arrow.state = NOCKED;
+    arrow.pos = {0, 1, 1};
+    printf("Arrow pos: %.2f, %.2f, %.2f\n",
+            arrow.pos.x,
+            arrow.pos.y,
+            arrow.pos.z
+          );
+}
+
 void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
     case GLUT_LEFT_BUTTON:
         if (state == GLUT_UP) {
-            arrow.pos = {
-                player.pos.x,
-                player.pos.y,
-                player.pos.z
-            };
-
-            arrow.vel = {
-                sin(player.yaw * M_PI / 180),
-                -sin(player.pitch * M_PI / 180),
-                -cos(player.yaw * M_PI / 180)
-            };
-            arrow.vel *= 2.8;
+            fire_arrow();
+        }
+        break;
+    case GLUT_RIGHT_BUTTON:
+        if (state == GLUT_UP) {
+            nock_arrow();
         }
     }
 }

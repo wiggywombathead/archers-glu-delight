@@ -12,9 +12,6 @@ public:
     float yaw;
     float roll;
 
-    Bow bow;
-    Arrow arrow;
-
     void see();
 };
 
