@@ -3,6 +3,7 @@
 
 #include <ctime>
 #include <cmath>
+#include <ostream>
 
 struct vec3 {
     float x, y, z;
@@ -44,11 +45,6 @@ struct vec3 {
     float len() {
         return sqrt(x*x + y*y + z*z);
     }
-    /*
-    std::ostream& operator<<(std::ostream &strm, const vec3 &v) {
-        return strm << "<" << v.x << ", " << v.y << "," << v.z << ">";
-    }
-    */
     vec3 normalize() {
         float l = len();
         vec3 norm = {
@@ -61,7 +57,8 @@ struct vec3 {
 };
 
 void draw_capped_cylinder(const float r, const float h, const int slices=32, const int stacks=32);
-
+std::ostream& operator<<(std::ostream &strm, const vec3& v);
 vec3 cross(vec3, vec3);
+float dot(vec3, vec3);
 
 #endif

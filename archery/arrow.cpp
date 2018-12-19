@@ -2,6 +2,7 @@
 #include "util.h"
 
 #include <GL/glut.h>
+#include <iostream>
 #include <ctime>
 #include <cstdio>
 
@@ -12,7 +13,7 @@ Arrow::Arrow(float t, float l) {
     thickness = t;
     length = l;
 
-    pos = {0, 3, 3};
+    pos = {0, 3, 0};
     vel = {0, 0, 0};
     state = FIRED;
 }
@@ -38,8 +39,6 @@ void Arrow::simulate() {
     vec3 dv = gravity * dt;
 
     vel += dv;
-
-    vec3 diff = vel * dt;
     pos += vel;
 
     if (pos.y <= 0) {
@@ -50,7 +49,7 @@ void Arrow::simulate() {
         vel.z *= 0.8;
     }
 
-    glutPostRedisplay();
+    //glutPostRedisplay();
 }
 
 void Arrow::draw_nocked() {
@@ -63,17 +62,9 @@ void Arrow::draw_nocked() {
 }
 
 void Arrow::draw_flight() {
-
-    //vec3 dir = {0, 0, 1};
-
-    //vec3 x = pos.normalize();
-
-    //vec3 y = {0, 1, 0};
-    //y = 
-
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
-        //glRotatef(theta, plane.x, plane.y, plane.z);
+        glRotatef(atan2(vel.y, vel.x) * 180 / 3.14, 0, 0, 1);
         glCallList(handle);
     glPopMatrix();
     glutPostRedisplay();

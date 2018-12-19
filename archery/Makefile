@@ -16,4 +16,6 @@ OBJS = $(SRCS:%.cpp=%.o)
 
 all: $(OBJS)
 	$(CXX) $(LDFLAGS) $(LDLIBS) -o archery $(OBJS)
+
+clean:
 	@rm *.o

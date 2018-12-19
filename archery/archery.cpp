@@ -9,7 +9,7 @@
 #endif
 
 #include "util.h"
-#include "camera.h"
+#include "player.h"
 #include "bow.h"
 #include "arrow.h"
 
@@ -60,7 +60,7 @@ enum ArrowParts {
 };
 
 Bow bow(0.02f, 0.8f);
-Arrow arrow(0.01f, 0.2f);
+Arrow arrow(0.01f, 0.4f);
 
 Player player = {
     {0, 2, 5},
@@ -246,7 +246,7 @@ size_t make_earth() {
 int main(int argc, char *argv[]) {
 
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
 
     glutInitWindowSize(640, 640);
     glutInitWindowPosition(100, 100);
@@ -275,6 +275,7 @@ int init() {
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
     glShadeModel(GL_SMOOTH);
+    glEnable(GL_MULTISAMPLE);
 
     glutSetCursor(GLUT_CURSOR_NONE);
 
@@ -427,7 +428,7 @@ void display() {
 
         glPushMatrix();
             glTranslatef(projectile.pos.x, projectile.pos.y, projectile.pos.z);
-            glutSolidSphere(0.1, 128, 128);
+            // glutSolidSphere(0.1, 128, 128);
         glPopMatrix();
 
         // draw the ground
@@ -437,16 +438,34 @@ void display() {
             glCallList(g_earth);
         glPopMatrix();
 
-    glPopMatrix();
+        glDisable(GL_LIGHTING);
+        //glDisable(GL_DEPTH_TEST);
 
-    glDisable(GL_LIGHTING);
-    glDisable(GL_DEPTH_TEST);
+        glPushMatrix();
+            glTranslatef(0, 0.02, 0);
+            glScalef(2, 2, 2);
+            glBegin(GL_LINES);
+                glColor3f(1, 0, 0);
+                glVertex3f(0, 0, 0);
+                glVertex3f(1, 0, 0);
+
+                glColor3f(0, 1, 0);
+                glVertex3f(0, 0, 0);
+                glVertex3f(0, 1, 0);
+
+                glColor3f(0, 0, 1);
+                glVertex3f(0, 0, 0);
+                glVertex3f(0, 0, 1);
+            glEnd();
+        glPopMatrix();
+    glPopMatrix();
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, WIN_W, 0, WIN_H);
 
     glPointSize(2.0f);
+    glColor3f(1, 1, 1);
     glBegin(GL_POINTS);
         glVertex2f(WIN_W / 2, WIN_H / 2);
     glEnd();
@@ -510,21 +529,15 @@ void fire_arrow() {
     arrow.state = FIRED;
     arrow.pos = player.pos;
     arrow.vel = {
-        sin(player.yaw * M_PI / 180),
-        -sin(player.pitch * M_PI / 180),
-        -cos(player.yaw * M_PI / 180)
+        sinf(player.yaw * M_PI / 180),
+        -sinf(player.pitch * M_PI / 180),
+        -cosf(player.yaw * M_PI / 180)
     };
     arrow.vel *= 0.5f;
 }
 
 void nock_arrow() {
     arrow.state = NOCKED;
-    arrow.pos = {0, 1, 1};
-    printf("Arrow pos: %.2f, %.2f, %.2f\n",
-            arrow.pos.x,
-            arrow.pos.y,
-            arrow.pos.z
-          );
 }
 
 void mouse_click(int button, int state, int x, int y) {
