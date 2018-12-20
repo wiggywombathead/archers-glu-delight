@@ -9,6 +9,8 @@
 clock_t prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
 
+extern bool paused;
+
 Arrow::Arrow(float t, float l) {
     thickness = t;
     length = l;
@@ -34,7 +36,12 @@ void Arrow::simulate() {
     curr_tick = clock();
 
     float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
-    dt /= 1000;
+
+    /* HACK - check if we dip below 30fps and assume we are paused */
+    if (dt > 0.03)
+        dt = 0.001f;
+
+    dt /= 10;
 
     vec3 dv = gravity * dt;
 
@@ -62,9 +69,21 @@ void Arrow::draw_nocked() {
 }
 
 void Arrow::draw_flight() {
+
+    float theta = atan2(vel.y, vel.z) * 180.f / M_PI;
+    float phi = atan2(vel.x, vel.z) * 180.f / M_PI;
+
+    if (vel.z < 0) {
+        theta += 180;
+        phi += 180;
+    }
+
+    // printf("T: %.2f, P: %.2f\n", theta, phi);
+
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
-        glRotatef(atan2(vel.y, vel.x) * 180 / 3.14, 0, 0, 1);
+        glRotatef(-theta, 1, 0, 0);
+        glRotatef(phi, 0, 1, 0);
         glCallList(handle);
     glPopMatrix();
     glutPostRedisplay();

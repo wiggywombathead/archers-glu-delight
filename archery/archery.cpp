@@ -31,6 +31,7 @@ void reshape(int, int);
 bool first_mouse = true;    // avoid jump when first entering
 bool warped = false;        // avoid jump when warping mouse back
 bool escape_mouse = false;
+bool paused = false;
 
 bool english = false;   // weapon is teapot
 
@@ -410,7 +411,8 @@ void display() {
 
         // simulate arrows
         if (arrow.state == FIRED) {
-            arrow.simulate();
+            if (!paused)
+                arrow.simulate();
             arrow.draw_flight();
         }
 
@@ -478,6 +480,9 @@ void keyboard(unsigned char k, int, int) {
     switch (k) {
     case 'q':
         exit(1);
+    case 'p':
+        paused = !paused;
+        break;
     case 'w':
         player.pos.x += 0.2 * sin(player.yaw * M_PI / 180);
         player.pos.z -= 0.2 * cos(player.yaw * M_PI / 180);
@@ -533,7 +538,7 @@ void fire_arrow() {
         -sinf(player.pitch * M_PI / 180),
         -cosf(player.yaw * M_PI / 180)
     };
-    arrow.vel *= 0.5f;
+    arrow.vel *= .1f;
 }
 
 void nock_arrow() {
