@@ -1,17 +1,20 @@
 # TODO
-- [ ] Regulate/display FPS
-- [x] Make bow
-- [x] Make arrow
-- [x] Classes
-- [ ] Revert to classless?
-- [ ] Textures
-- [ ] Fire straight up
 - [ ] Collisions
-- [ ] Arrow head in direction of travel
+- [ ] Textures
 - [ ] Scoring
+- [ ] Adjustable difficulty
+- [ ] Regulate/display FPS
+- [ ] Fire straight up
 - [ ] Moving targets
 - [ ] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
 - [ ] Smoother bow (adjustable with # segments)
-- [x] Get arrow to simulate
-- [ ] Slow down time
+- [x] Make bow
+- [x] Make arrow
+- [x] Classes
+- [x] Get arrow to simulate physics
+- [x] Slow down time
+  - [ ] Get slow motion working correctly (not just for gravity)
+- [x] Pause
+  - [ ] Make unpausing hack more elegant
+- [x] Arrow head in direction of travel

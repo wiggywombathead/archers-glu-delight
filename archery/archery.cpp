@@ -33,8 +33,6 @@ bool warped = false;        // avoid jump when warping mouse back
 bool escape_mouse = false;
 bool paused = false;
 
-bool english = false;   // weapon is teapot
-
 // keep track of last mouse position
 int last_x = 320;
 int last_y = 320;
@@ -42,8 +40,9 @@ int last_y = 320;
 size_t g_target;    // target
 size_t g_earth;     // the ground
 
-extern clock_t prev_tick, curr_tick;
-float dt;
+size_t g_axes;
+
+float slowmo = 10.f;
 
 enum {
     HANDLE = 0,
@@ -60,15 +59,9 @@ enum ArrowParts {
     ARR_PARTS = 3
 };
 
+Player player({0, 2, 5});
 Bow bow(0.02f, 0.8f);
 Arrow arrow(0.01f, 0.4f);
-
-Player player = {
-    {0, 2, 5},
-    0.0f,
-    0.0f,
-    0.0f,
-};
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -83,7 +76,7 @@ float arrow_len;
 struct light_t {
     size_t name;
     float ambient[4];
-    float diffuse[4];
+    float diffuse[4];   // color
     float specular[4];
     float position[4];
 };
@@ -129,8 +122,22 @@ light_t red_light = {
 	{0.0f, 0.0f, 0.0f, 1.0f},
 	{1.0f, 0.0f, 0.0f, 1.0f},
 	{1.0f, 1.0f, 1.0f, 1.0f},
-	{0.0f, 0.75f, 0.5f, 1.0f}
+	{1.0f, 2.0f, 3.5f, 1.0f}
 };
+
+light_t green_light = {
+    GL_LIGHT1,
+	{0.0f, 0.0f, 0.0f, 1.0f},
+	{0.0f, 1.0f, 0.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f},
+	{-3.0f, 2.0f, 3.5f, 1.0f}
+};
+
+light_t lights[3] = {
+    white_light, red_light, green_light
+};
+unsigned int cur_light;
+int num_lights = 3;
 
 void set_material(const material_t &mat) {
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat.ambient);
@@ -148,16 +155,36 @@ void set_light(const light_t &light) {
     glEnable(light.name);
 }
 
-struct projectile_t {
-    vec3 pos;
-    vec3 vel;
-};
+size_t makes_axes() {
+    static const float verts[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {0, 0, 1}
+    };
 
+    size_t handle = glGenLists(1);
 
-projectile_t projectile = {
-    {0, 0, 0},
-    {0, 0, 0}
-};
+    glNewList(handle, GL_COMPILE);
+        glLineWidth(2);
+        glBegin(GL_LINES);
+            for (size_t i = 0; i < 3; i++) {
+                glColor3fv(verts[i]);
+                glVertex3f(0, 0, 0);
+                glVertex3fv(verts[i]);
+            }
+        glEnd();
+    glEndList();
+
+    return handle;
+}
+
+void draw_axes() {
+    glPushMatrix();
+        glTranslatef(0, 0.01, 0);
+        glScalef(2, 2, 2);
+        glCallList(g_axes);
+    glPopMatrix();
+}
 
 size_t make_target() {
 
@@ -234,98 +261,15 @@ size_t make_earth() {
     size_t handle = glGenLists(1);
 
     glNewList(handle, GL_COMPILE);
-        glNormal3f(norm.x, norm.y, norm.z);
         glBegin(GL_QUADS);
             for (size_t i = 0; i < 4; i++)
                 glVertex3fv(verts[i]);
+            glNormal3f(norm.x, norm.y, norm.z);
         glEnd();
     glEndList();
 
     return handle;
 }        
-
-int main(int argc, char *argv[]) {
-
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
-
-    glutInitWindowSize(640, 640);
-    glutInitWindowPosition(100, 100);
-
-    glutCreateWindow("Archery");
-
-    glutKeyboardFunc(keyboard);
-    glutSpecialFunc(special);
-    glutMouseFunc(mouse_click);
-    glutPassiveMotionFunc(mouse_motion);
-    glutReshapeFunc(reshape);
-    glutDisplayFunc(display);
-    // glutIdleFunc(idle);
-
-    init();
-
-    glutMainLoop();
-
-    return 0;
-}
-
-int init() {
-
-    set_light(white_light);
-
-    glEnable(GL_LIGHTING);
-    glEnable(GL_DEPTH_TEST);
-    glShadeModel(GL_SMOOTH);
-    glEnable(GL_MULTISAMPLE);
-
-    glutSetCursor(GLUT_CURSOR_NONE);
-
-    bow.make_handle();
-    arrow.make_handle();
-
-    bow_str_len = 2 * (
-            bow_handle_len / 2 + 
-            bow_limb_len * cos(bow_curve * M_PI / 180) + 
-            bow_tip_len * cos(2 * bow_curve * M_PI / 180)
-    );
-
-    g_target = make_target();
-    g_earth = make_earth();
-    g_bow = make_bow();
-
-    return 0;
-}
-
-/*
-void simulate_physics() {
-
-    prev_tick = curr_tick;
-    curr_tick = clock();
-
-    dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
-
-    vec3 dv = gravity * dt;
-
-    projectile.vel += dv;
-
-    vec3 diff = projectile.vel * dt;
-    projectile.pos += projectile.vel;
-
-    if (projectile.pos.y <= 0) {
-        projectile.pos.y = 0;
-        projectile.vel.y *= -0.5;
-
-        projectile.vel.x *= 0.8;
-        projectile.vel.z *= 0.8;
-    }
-
-    glutPostRedisplay();
-}
-*/
-
-void idle() {
-    // simulate_physics();
-}
 
 void draw_weapon() {
 
@@ -334,8 +278,6 @@ void draw_weapon() {
 
     glPushMatrix();
 
-    if (!english) {
-        
         /*
         glCallList(g_bow + HANDLE);
 
@@ -373,12 +315,6 @@ void draw_weapon() {
             glCallList(g_bow + STRING);
         glPopMatrix();
         */
-    } else {
-        glTranslatef(0.4, -0.3, -0.7);
-        glRotatef(90, 0, 1, 0);
-        set_material(porcelain);
-        glutSolidTeapot(0.15);
-    }
 
     glPopMatrix();
 }
@@ -416,6 +352,10 @@ void display() {
             arrow.draw_flight();
         }
 
+        if (arrow.state == STUCK) {
+            arrow.draw_flight();
+        }
+
         // draw the target
         glPushMatrix();
             glRotatef(90, 0, 1, 0);
@@ -428,44 +368,37 @@ void display() {
         // simulate physics
         // simulate_physics();
 
-        glPushMatrix();
-            glTranslatef(projectile.pos.x, projectile.pos.y, projectile.pos.z);
-            // glutSolidSphere(0.1, 128, 128);
-        glPopMatrix();
-
         // draw the ground
         glPushMatrix();
-            glScalef(25, 25, 25);
-            set_material(flat);
-            glCallList(g_earth);
+            set_material(porcelain);
+            glTranslatef(0, -1, 0);
+            glScalef(50, 2, 50);
+            glutSolidCube(1);
+            // glCallList(g_earth);
         glPopMatrix();
 
         glDisable(GL_LIGHTING);
-        //glDisable(GL_DEPTH_TEST);
+
+        // draw axes
+        draw_axes();
 
         glPushMatrix();
-            glTranslatef(0, 0.02, 0);
-            glScalef(2, 2, 2);
-            glBegin(GL_LINES);
-                glColor3f(1, 0, 0);
-                glVertex3f(0, 0, 0);
-                glVertex3f(1, 0, 0);
-
-                glColor3f(0, 1, 0);
-                glVertex3f(0, 0, 0);
-                glVertex3f(0, 1, 0);
-
-                glColor3f(0, 0, 1);
-                glVertex3f(0, 0, 0);
-                glVertex3f(0, 0, 1);
+            glBegin(GL_POINTS);
+            glPointSize(4);
+            glColor3f(1, 1, 1);
+            glVertex4fv(white_light.position);
+            glColor3f(0, 1, 0);
+            glVertex4fv(red_light.position);
             glEnd();
         glPopMatrix();
+
     glPopMatrix();
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, WIN_W, 0, WIN_H);
 
+    // draw crosshair
     glPointSize(2.0f);
     glColor3f(1, 1, 1);
     glBegin(GL_POINTS);
@@ -506,8 +439,24 @@ void keyboard(unsigned char k, int, int) {
         else
             glutSetCursor(GLUT_CURSOR_NONE);
         break;
-    case 't':
-        english = !english;
+    case '[':
+        slowmo += 0.5f;
+        break;
+    case ']':
+        slowmo -= 0.5f;
+        if (slowmo < 1)
+            slowmo = 0;
+        break;
+    case ',':
+        glDisable(lights[cur_light].name);
+        cur_light++;
+        cur_light %= num_lights;
+        set_light(lights[cur_light]);
+        break;
+    case '.':
+        glDisable(lights[cur_light].name);
+        cur_light = (cur_light == 0) ? num_lights - 1 : cur_light - 1;
+        set_light(lights[cur_light]);
         break;
     }
 
@@ -530,33 +479,17 @@ void special(int k, int, int) {
     glutPostRedisplay();
 }
 
-void fire_arrow() {
-    arrow.state = FIRED;
-    arrow.pos = player.pos;
-    arrow.vel = {
-        sinf(player.yaw * M_PI / 180),
-        -sinf(player.pitch * M_PI / 180),
-        -cosf(player.yaw * M_PI / 180)
-    };
-    arrow.vel *= .1f;
-}
-
-void nock_arrow() {
-    arrow.state = NOCKED;
-}
-
 void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
     case GLUT_LEFT_BUTTON:
-        if (state == GLUT_UP) {
-            fire_arrow();
-        }
+        if (state == GLUT_UP)
+            arrow.fire();
         break;
     case GLUT_RIGHT_BUTTON:
-        if (state == GLUT_UP) {
-            nock_arrow();
-        }
+        if (state == GLUT_UP)
+            arrow.nock();
+        break;
     }
 }
 
@@ -611,4 +544,57 @@ void reshape(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluPerspective(75, 1, 0.4, 100);
+}
+
+int init() {
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_DEPTH_TEST);
+    glShadeModel(GL_SMOOTH);
+    glEnable(GL_MULTISAMPLE);
+
+    glutSetCursor(GLUT_CURSOR_NONE);
+
+    set_light(lights[cur_light]);
+
+    bow.make_handle();
+    arrow.make_handle();
+
+    bow_str_len = 2 * (
+            bow_handle_len / 2 + 
+            bow_limb_len * cos(bow_curve * M_PI / 180) + 
+            bow_tip_len * cos(2 * bow_curve * M_PI / 180)
+    );
+
+    g_axes = makes_axes();
+    g_target = make_target();
+    g_earth = make_earth();
+    g_bow = make_bow();
+
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
+
+    glutInitWindowSize(640, 640);
+    glutInitWindowPosition(100, 100);
+
+    glutCreateWindow("Archery");
+
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(special);
+    glutMouseFunc(mouse_click);
+    glutPassiveMotionFunc(mouse_motion);
+    glutReshapeFunc(reshape);
+    glutDisplayFunc(display);
+    // glutIdleFunc(idle);
+
+    init();
+
+    glutMainLoop();
+
+    return 0;
 }

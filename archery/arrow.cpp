@@ -1,5 +1,6 @@
 #include "arrow.h"
 #include "util.h"
+#include "player.h"
 
 #include <GL/glut.h>
 #include <iostream>
@@ -9,7 +10,10 @@
 clock_t prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
 
-extern bool paused;
+extern float slowmo;
+
+// player whose arrow this is
+extern Player player;   
 
 Arrow::Arrow(float t, float l) {
     thickness = t;
@@ -30,6 +34,21 @@ void Arrow::make_handle() {
     glEndList();
 }
 
+void Arrow::nock() {
+    state = NOCKED;
+}
+
+void Arrow::fire() {
+    state = FIRED;
+    pos = player.pos;
+    vel = {
+        sinf(player.yaw * M_PI / 180),
+        -sinf(player.pitch * M_PI / 180),
+        -cosf(player.yaw * M_PI / 180)
+    };
+    vel *= .1f;
+}
+
 void Arrow::simulate() {
 
     prev_tick = curr_tick;
@@ -41,7 +60,7 @@ void Arrow::simulate() {
     if (dt > 0.03)
         dt = 0.001f;
 
-    dt /= 10;
+    // dt /= slowmo;
 
     vec3 dv = gravity * dt;
 
@@ -70,21 +89,20 @@ void Arrow::draw_nocked() {
 
 void Arrow::draw_flight() {
 
-    float theta = atan2(vel.y, vel.z) * 180.f / M_PI;
-    float phi = atan2(vel.x, vel.z) * 180.f / M_PI;
+    yaw = atan2(vel.y, vel.z) * 180.f / M_PI;
+    pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
 
     if (vel.z < 0) {
-        theta += 180;
-        phi += 180;
+        yaw += 180;
+        pitch += 180;
     }
-
-    // printf("T: %.2f, P: %.2f\n", theta, phi);
 
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
-        glRotatef(-theta, 1, 0, 0);
-        glRotatef(phi, 0, 1, 0);
+        glRotatef(-yaw, 1, 0, 0);
+        glRotatef(pitch, 0, 1, 0);
         glCallList(handle);
     glPopMatrix();
+
     glutPostRedisplay();
 }

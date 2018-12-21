@@ -2,6 +2,10 @@
 
 #include <GL/glut.h>
 
+Player::Player(vec3 p) {
+    pos = p;
+}
+
 void Player::see() {
     // rotate around x for pitch
     glRotatef(pitch, 1.0f, 0.0f, 0.0f);

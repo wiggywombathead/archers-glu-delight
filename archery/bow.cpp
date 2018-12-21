@@ -13,7 +13,10 @@ void Bow::make_handle() {
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
-            glRotatef(-90, 1, 0, 0);
+            glRotatef(-80, 1, 0, 0);
+            draw_capped_cylinder(thickness, length);
+
+            glRotatef(170, 1, 0, 0);
             draw_capped_cylinder(thickness, length);
         glPopMatrix();
     glEndList();

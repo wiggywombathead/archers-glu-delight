@@ -12,6 +12,7 @@ public:
     float yaw;
     float roll;
 
+    Player(vec3);
     void see();
 };
 

@@ -7,7 +7,8 @@
 enum State {
     STASHED,
     NOCKED,
-    FIRED
+    FIRED,
+    STUCK
 };
 
 class Arrow {
@@ -19,9 +20,12 @@ public:
 
     vec3 pos;
     vec3 vel;
+    float pitch, yaw;
 
     Arrow(float t, float l);
     void make_handle();
+    void nock();
+    void fire();
     void simulate();
     void draw_nocked();
     void draw_flight();
