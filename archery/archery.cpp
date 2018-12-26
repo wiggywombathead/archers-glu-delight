@@ -479,16 +479,28 @@ void special(int k, int, int) {
     glutPostRedisplay();
 }
 
+clock_t ticks;
+float dt;
+
 void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
     case GLUT_LEFT_BUTTON:
-        if (state == GLUT_UP)
-            arrow.fire();
+        if (state == GLUT_UP) {
+            // TODO: dt
+            player.fire(arrow);
+        }
+
+        if (state == GLUT_DOWN && !pulling) {
+            pulling = true;
+            ticks = clock();
+        }
+
         break;
     case GLUT_RIGHT_BUTTON:
-        if (state == GLUT_UP)
-            arrow.nock();
+        if (state == GLUT_DOWN)
+            player.nock(arrow);
+
         break;
     }
 }

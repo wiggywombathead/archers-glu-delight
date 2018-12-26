@@ -12,9 +12,6 @@ vec3 gravity = {0, -9.81, 0};
 
 extern float slowmo;
 
-// player whose arrow this is
-extern Player player;   
-
 Arrow::Arrow(float t, float l) {
     thickness = t;
     length = l;
@@ -32,21 +29,6 @@ void Arrow::make_handle() {
             draw_capped_cylinder(thickness, length);
         glPopMatrix();
     glEndList();
-}
-
-void Arrow::nock() {
-    state = NOCKED;
-}
-
-void Arrow::fire() {
-    state = FIRED;
-    pos = player.pos;
-    vel = {
-        sinf(player.yaw * M_PI / 180),
-        -sinf(player.pitch * M_PI / 180),
-        -cosf(player.yaw * M_PI / 180)
-    };
-    vel *= .1f;
 }
 
 void Arrow::simulate() {

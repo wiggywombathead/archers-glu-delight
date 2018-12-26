@@ -24,8 +24,7 @@ public:
 
     Arrow(float t, float l);
     void make_handle();
-    void nock();
-    void fire();
+
     void simulate();
     void draw_nocked();
     void draw_flight();

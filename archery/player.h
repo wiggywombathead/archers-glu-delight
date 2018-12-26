@@ -12,8 +12,14 @@ public:
     float yaw;
     float roll;
 
+    float power;
+
     Player(vec3);
     void see();
+    void pull();
+
+    void nock(Arrow&);
+    void fire(Arrow&);
 };
 
 #endif
