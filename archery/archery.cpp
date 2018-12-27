@@ -12,6 +12,7 @@
 #include "player.h"
 #include "bow.h"
 #include "arrow.h"
+#include "target.h"
 
 #define WIN_W 640
 #define WIN_H 640
@@ -50,7 +51,8 @@ enum ArrowParts {
 
 Player player({0, 2, 5});
 Bow bow(0.02f, 0.8f);
-Arrow arrow(0.01f, 0.4f);
+Arrow arrow(0.01f, 0.6);
+Target target({0, 1, -0}, 1, 0.1f);
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -334,10 +336,17 @@ void display() {
         // translate everything to camera position/view
         player.see();
 
+
         // simulate arrows
         if (arrow.state == FIRED) {
-            if (!paused)
+
+            if (!paused) {
+                // detect collisions
+                target.hit_by(arrow);
+
                 arrow.simulate();
+            }
+
             arrow.draw_flight();
         }
 
@@ -346,16 +355,15 @@ void display() {
         }
 
         // draw the target
-        glPushMatrix();
-            glRotatef(90, 0, 1, 0);
-            glTranslatef(0, 2, 0);
-            glScalef(0.5f, 0.5f, 0.5f);
-            set_material(brass);
-            // glCallList(g_target);
-        glPopMatrix();
-
-        // simulate physics
-        // simulate_physics();
+        // glPushMatrix();
+        //     glRotatef(90, 0, 1, 0);
+        //     glTranslatef(0, 2, 0);
+        //     glScalef(0.5f, 0.5f, 0.5f);
+        //     set_material(brass);
+        //     // glCallList(g_target);
+        // glPopMatrix();
+        
+        target.draw();
 
         // draw the ground
         glPushMatrix();
@@ -452,12 +460,16 @@ void special(int k, int, int) {
 
     switch (k) {
     case GLUT_KEY_LEFT:
+        target.move({-1, 0, 0});
         break;
     case GLUT_KEY_RIGHT:
+        target.move({1, 0, 0});
         break;
     case GLUT_KEY_UP:
+        target.move({0, 1, 0});
         break;
     case GLUT_KEY_DOWN:
+        target.move({0, -1, 0});
         break;
     }
 
@@ -571,6 +583,7 @@ int init() {
 
     bow.make_handle();
     arrow.make_handle();
+    target.make_handle();
 
     bow_str_len = 2 * (
             bow_handle_len / 2 + 

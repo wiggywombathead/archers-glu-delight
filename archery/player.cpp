@@ -32,7 +32,6 @@ void Player::pull(Arrow &a, float amnt) {
     power += amnt;
     power = (power > 1.5f) ? 1.5f : power;
     a.pulled = power / 1.5f;
-    printf("Pulled %%: %f\n", a.pulled);
 }
 
 void Player::fire(Arrow &a) {

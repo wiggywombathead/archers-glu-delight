@@ -1,5 +1,6 @@
 # TODO
 - [ ] Collisions
+  - [ ] Working on : figure out why it fails with inclusion of z-axis
 - [ ] Textures
 - [ ] Scoring
 - [ ] Adjustable difficulty
