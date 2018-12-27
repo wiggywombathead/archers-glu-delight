@@ -19,15 +19,6 @@
 
 const int FRAME_INTERVAL = 1 * 1000 / FRAME_RATE;
 
-int init();
-void idle();
-void display();
-void keyboard(unsigned char, int, int);
-void special(int, int, int);
-void mouse_click(int, int, int, int);
-void mouse_motion(int, int);
-void reshape(int, int);
-
 bool first_mouse = true;    // avoid jump when first entering
 bool warped = false;        // avoid jump when warping mouse back
 bool escape_mouse = false;
@@ -41,8 +32,6 @@ size_t g_target;    // target
 size_t g_earth;     // the ground
 
 size_t g_axes;
-
-float slowmo = 10.f;
 
 enum {
     HANDLE = 0,
@@ -440,12 +429,8 @@ void keyboard(unsigned char k, int, int) {
             glutSetCursor(GLUT_CURSOR_NONE);
         break;
     case '[':
-        slowmo += 0.5f;
         break;
     case ']':
-        slowmo -= 0.5f;
-        if (slowmo < 1)
-            slowmo = 0;
         break;
     case ',':
         glDisable(lights[cur_light].name);
@@ -479,21 +464,25 @@ void special(int k, int, int) {
     glutPostRedisplay();
 }
 
-clock_t ticks;
-float dt;
+clock_t pull_last, pull_now;
+bool pulling = false;
+float dt_pull;
 
 void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
     case GLUT_LEFT_BUTTON:
-        if (state == GLUT_UP) {
-            // TODO: dt
-            player.fire(arrow);
+        if (state == GLUT_DOWN) {
+            pulling = true;
+            pull_now = clock();
+
+            // avoid a jump when releasing fire button
+            warped = true;
         }
 
-        if (state == GLUT_DOWN && !pulling) {
-            pulling = true;
-            ticks = clock();
+        if (state == GLUT_UP) {
+            pulling = false;
+            player.fire(arrow);
         }
 
         break;
@@ -502,6 +491,17 @@ void mouse_click(int button, int state, int x, int y) {
             player.nock(arrow);
 
         break;
+    }
+}
+
+void idle() {
+    if (pulling) {
+        pull_last = pull_now;
+        pull_now = clock();
+
+        dt_pull = ((float) (pull_now - pull_last)) / CLOCKS_PER_SEC;
+        float amount = dt_pull * 10;
+        player.pull(arrow, amount);
     }
 }
 
@@ -602,7 +602,7 @@ int main(int argc, char *argv[]) {
     glutPassiveMotionFunc(mouse_motion);
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
-    // glutIdleFunc(idle);
+    glutIdleFunc(idle);
 
     init();
 

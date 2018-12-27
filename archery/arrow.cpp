@@ -10,15 +10,13 @@
 clock_t prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
 
-extern float slowmo;
-
 Arrow::Arrow(float t, float l) {
     thickness = t;
     length = l;
 
     pos = {0, 3, 0};
     vel = {0, 0, 0};
-    state = FIRED;
+    state = NOCKED;
 }
 
 void Arrow::make_handle() {
@@ -42,8 +40,6 @@ void Arrow::simulate() {
     if (dt > 0.03)
         dt = 0.001f;
 
-    // dt /= slowmo;
-
     vec3 dv = gravity * dt;
 
     vel += dv;
@@ -62,7 +58,7 @@ void Arrow::simulate() {
 
 void Arrow::draw_nocked() {
     glPushMatrix();
-        glTranslatef(0.4, -0.2, -1);
+        glTranslatef(0.4, -0.2, -1.2 + pulled);
         glRotatef(15, 0, 1, 0);
         glCallList(handle);
     glPopMatrix();

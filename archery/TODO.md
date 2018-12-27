@@ -6,7 +6,7 @@
 - [ ] Regulate/display FPS
 - [ ] Fire straight up
 - [ ] Moving targets
-- [ ] Nock arrow and draw string (varying power)
+- [x] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
 - [ ] Smoother bow (adjustable with # segments)
 - [x] Make bow

@@ -20,7 +20,8 @@ public:
 
     vec3 pos;
     vec3 vel;
-    float pitch, yaw;
+    float pitch, yaw;   // arrow orientation
+    float pulled;       // percentage pulled
 
     Arrow(float t, float l);
     void make_handle();

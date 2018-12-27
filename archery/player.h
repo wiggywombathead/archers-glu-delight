@@ -16,10 +16,10 @@ public:
 
     Player(vec3);
     void see();
-    void pull();
 
     void nock(Arrow&);
     void fire(Arrow&);
+    void pull(Arrow&, float);
 };
 
 #endif

@@ -4,8 +4,6 @@
 #include <ctime>
 #include <GL/glut.h>
 
-clock_t prev_pull, curr_pull;
-
 Player::Player(vec3 p) {
     pos = p;
 
@@ -27,6 +25,14 @@ void Player::see() {
 void Player::nock(Arrow &a) {
     a.state = NOCKED;
     power = 0.f;
+    a.pulled = 0.f;
+}
+
+void Player::pull(Arrow &a, float amnt) {
+    power += amnt;
+    power = (power > 1.5f) ? 1.5f : power;
+    a.pulled = power / 1.5f;
+    printf("Pulled %%: %f\n", a.pulled);
 }
 
 void Player::fire(Arrow &a) {
