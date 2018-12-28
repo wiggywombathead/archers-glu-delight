@@ -1,9 +1,10 @@
 # TODO
 - [ ] Collisions
   - [x] Working on : figure out why it fails with inclusion of z-axis
-  - [ ] Fix the jitter when arrow first hits target
+  - [x] Fix the jitter when arrow first hits target
 - [ ] Textures
-- [ ] Scoring
+- [x] Scoring
+  - [ ] Now fix bug when target is moving
 - [ ] Adjustable difficulty
   - [x] Moving targets
   - [ ] Limited arrows

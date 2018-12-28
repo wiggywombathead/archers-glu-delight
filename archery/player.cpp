@@ -6,7 +6,6 @@
 
 Player::Player(vec3 p) {
     pos = p;
-
     pitch = yaw = roll = 0.f;
     power = 0.f;
 }

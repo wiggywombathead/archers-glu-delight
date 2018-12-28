@@ -35,6 +35,7 @@ public:
     void draw_flight();
 
     bool has_hit(Target&);
+    int get_score(Target&);
     void draw_stuck(Target&);
 };
 

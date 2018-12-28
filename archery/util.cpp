@@ -36,3 +36,11 @@ vec3 cross(vec3 a, vec3 b) {
 float dot(vec3 a, vec3 b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
+
+float dist(vec3 a, vec3 b) {
+    return sqrt(
+        pow(a.x - b.x, 2) +
+        pow(a.y - b.y, 2) +
+        pow(a.z - b.z, 2)
+    );
+}

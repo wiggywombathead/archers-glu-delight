@@ -60,5 +60,6 @@ void draw_capped_cylinder(const float r, const float h, const int slices=32, con
 std::ostream& operator<<(std::ostream &strm, const vec3& v);
 vec3 cross(vec3, vec3);
 float dot(vec3, vec3);
+float dist(vec3, vec3);
 
 #endif

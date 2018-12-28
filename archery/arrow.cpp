@@ -123,3 +123,8 @@ void Arrow::draw_stuck(Target& t) {
 
     glutPostRedisplay();
 }
+
+int Arrow::get_score(Target& t) {
+    float seg_width = t.radius / t.segments;
+    return t.segments + 1 - ceil(dist(pos, t.pos)/seg_width);
+}

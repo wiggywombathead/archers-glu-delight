@@ -340,9 +340,12 @@ void display() {
 
         if (arrow.state == FIRED) {
 
-            // detect collisions
+            // detect first collision
             if (arrow.has_hit(target)) {
-                printf("Hit!\n");
+                int score = arrow.get_score(target);
+                printf("Hit! (%d)\n", score);
+                player.score += score;
+                printf("Current score: %d\n", player.score);
                 arrow.state = STUCK;
             } else {
                 arrow.simulate();

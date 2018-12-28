@@ -11,6 +11,8 @@ public:
     float thickness;
     vec3 pos;
 
+    unsigned int segments = 5;
+
     Target(vec3, float, float);
     void make_handle();
 
