@@ -1,12 +1,15 @@
 # TODO
 - [ ] Collisions
-  - [ ] Working on : figure out why it fails with inclusion of z-axis
+  - [x] Working on : figure out why it fails with inclusion of z-axis
+  - [ ] Fix the jitter when arrow first hits target
 - [ ] Textures
 - [ ] Scoring
 - [ ] Adjustable difficulty
+  - [x] Moving targets
+  - [ ] Limited arrows
+  - [ ] Time limit
 - [ ] Regulate/display FPS
 - [ ] Fire straight up
-- [ ] Moving targets
 - [x] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
 - [ ] Smoother bow (adjustable with # segments)

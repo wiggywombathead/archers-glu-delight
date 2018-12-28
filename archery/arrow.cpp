@@ -65,8 +65,7 @@ void Arrow::draw_nocked() {
     glutPostRedisplay();
 }
 
-void Arrow::draw_flight() {
-
+void Arrow::point() {
     yaw = atan2(vel.y, vel.z) * 180.f / M_PI;
     pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
 
@@ -75,10 +74,51 @@ void Arrow::draw_flight() {
         pitch += 180;
     }
 
+    glRotatef(-yaw, 1, 0, 0);
+    glRotatef(pitch, 0, 1, 0);
+}
+
+void Arrow::draw_flight() {
+
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
-        glRotatef(-yaw, 1, 0, 0);
-        glRotatef(pitch, 0, 1, 0);
+        point();
+        glCallList(handle);
+    glPopMatrix();
+
+    glutPostRedisplay();
+}
+
+bool Arrow::has_hit(Target& t) {
+    if (
+        (pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
+        (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
+        (pos.z >= t.pos.z) && (pos.z <= t.pos.z + t.thickness)
+    ) {
+        if (state == FIRED) {
+            offset = {
+                pos.x - t.pos.x,
+                pos.y - t.pos.y,
+                pos.z - t.pos.z
+            };
+            state = STUCK;
+        }
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void Arrow::draw_stuck(Target& t) {
+    pos = {
+        t.pos.x + offset.x,
+        t.pos.y + offset.y,
+        t.pos.z + offset.z
+    };
+    glPushMatrix();
+        glTranslatef(pos.x, pos.y, pos.z);
+        point();
         glCallList(handle);
     glPopMatrix();
 

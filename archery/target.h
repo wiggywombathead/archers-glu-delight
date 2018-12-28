@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include "util.h"
-#include "arrow.h"
 
 class Target {
 public:
@@ -17,7 +16,6 @@ public:
 
     void draw();
     void move(vec3);
-    bool hit_by(Arrow&);
 };
 
 #endif

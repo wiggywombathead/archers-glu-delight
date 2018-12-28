@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include "util.h"
+#include "target.h"
 
 enum State {
     STASHED,
@@ -19,7 +20,9 @@ public:
     State state;
 
     vec3 pos;
+    vec3 offset;        // offset from target centre
     vec3 vel;
+
     float pitch, yaw;   // arrow orientation
     float pulled;       // percentage pulled
 
@@ -27,8 +30,12 @@ public:
     void make_handle();
 
     void simulate();
+    void point();
     void draw_nocked();
     void draw_flight();
+
+    bool has_hit(Target&);
+    void draw_stuck(Target&);
 };
 
 #endif

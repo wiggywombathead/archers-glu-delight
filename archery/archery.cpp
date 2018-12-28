@@ -52,7 +52,7 @@ enum ArrowParts {
 Player player({0, 2, 5});
 Bow bow(0.02f, 0.8f);
 Arrow arrow(0.01f, 0.6);
-Target target({0, 1, -0}, 1, 0.1f);
+Target target({0, 1, -0}, 1, 1);
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -309,6 +309,8 @@ void draw_weapon() {
 
     glPopMatrix();
 }
+
+int cnt = 0;
         
 void display() {
 
@@ -336,33 +338,28 @@ void display() {
         // translate everything to camera position/view
         player.see();
 
+        if (arrow.state == FIRED || arrow.state == STUCK) {
 
-        // simulate arrows
-        if (arrow.state == FIRED) {
-
+            // simulate arrows
             if (!paused) {
+
                 // detect collisions
-                target.hit_by(arrow);
-
-                arrow.simulate();
+                if (arrow.has_hit(target)) {
+                    printf("Hit!\n");
+                    arrow.draw_stuck(target);
+                } else {
+                    arrow.simulate();
+                }
             }
-
-            arrow.draw_flight();
         }
 
-        if (arrow.state == STUCK) {
-            arrow.draw_flight();
-        }
+        float rad = cnt * 180 / M_PI;
+        rad /= 10000;
+        vec3 motion = {cos(rad)/25, 0, 0};
+        target.move(motion);
+        cnt++;
 
         // draw the target
-        // glPushMatrix();
-        //     glRotatef(90, 0, 1, 0);
-        //     glTranslatef(0, 2, 0);
-        //     glScalef(0.5f, 0.5f, 0.5f);
-        //     set_material(brass);
-        //     // glCallList(g_target);
-        // glPopMatrix();
-        
         target.draw();
 
         // draw the ground
