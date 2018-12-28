@@ -338,25 +338,26 @@ void display() {
         // translate everything to camera position/view
         player.see();
 
-        if (arrow.state == FIRED || arrow.state == STUCK) {
+        if (arrow.state == FIRED) {
 
-            // simulate arrows
-            if (!paused) {
-
-                // detect collisions
-                if (arrow.has_hit(target)) {
-                    printf("Hit!\n");
-                    arrow.draw_stuck(target);
-                } else {
-                    arrow.simulate();
-                }
+            // detect collisions
+            if (arrow.has_hit(target)) {
+                printf("Hit!\n");
+                arrow.state = STUCK;
+            } else {
+                arrow.simulate();
+                arrow.draw_flight();
             }
+        }
+
+        if (arrow.state == STUCK) {
+            arrow.draw_stuck(target);
         }
 
         float rad = cnt * 180 / M_PI;
         rad /= 10000;
         vec3 motion = {cos(rad)/25, 0, 0};
-        target.move(motion);
+        // target.move(motion);
         cnt++;
 
         // draw the target

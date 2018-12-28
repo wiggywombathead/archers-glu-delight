@@ -93,7 +93,7 @@ bool Arrow::has_hit(Target& t) {
     if (
         (pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z >= t.pos.z) && (pos.z <= t.pos.z + t.thickness)
+        (pos.z >= t.pos.z - t.thickness) && (pos.z <= t.pos.z)
     ) {
         if (state == FIRED) {
             offset = {
@@ -101,7 +101,6 @@ bool Arrow::has_hit(Target& t) {
                 pos.y - t.pos.y,
                 pos.z - t.pos.z
             };
-            state = STUCK;
         }
 
         return true;
