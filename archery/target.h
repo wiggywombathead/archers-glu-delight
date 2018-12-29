@@ -12,6 +12,7 @@ public:
     vec3 pos;
 
     unsigned int segments = 5;
+    int texture;
 
     Target(vec3, float, float);
     void make_handle();

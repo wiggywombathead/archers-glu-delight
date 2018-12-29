@@ -51,7 +51,7 @@ enum ArrowParts {
 
 Player player({0, 2, 5});
 Bow bow(0.02f, 0.8f);
-Arrow arrow(0.01f, 0.6);
+Arrow arrow(0.01f, 0.8);
 Target target({0, 1, -0}, 1, 1);
 
 size_t g_bow;
@@ -131,10 +131,10 @@ unsigned int cur_light;
 int num_lights = 3;
 
 void set_material(const material_t &mat) {
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat.ambient);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat.diffuse);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat.specular);
-    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, mat.shininess);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat.ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat.diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat.specular);
+    glMaterialf(GL_FRONT, GL_SHININESS, mat.shininess);
 };
 
 void set_light(const light_t &light) {
@@ -175,17 +175,6 @@ void draw_axes() {
         glScalef(2, 2, 2);
         glCallList(g_axes);
     glPopMatrix();
-}
-
-size_t make_target() {
-
-    size_t handle = glGenLists(1);
-
-    glNewList(handle, GL_COMPILE);
-        draw_capped_cylinder(2.0f, 0.1f, 32, 32);
-    glEndList();
-
-    return handle;
 }
 
 size_t make_arrow() {
@@ -235,32 +224,6 @@ size_t make_bow() {
 
     return handle;
 }
-
-size_t make_earth() {
-
-    const float verts[4][3] = {
-        { 1, 0, 1 },
-        { 1, 0, -1 },
-        { -1, 0, -1 },
-        { -1, 0, 1 }
-    };
-
-    vec3 v0 = {1, 0, 1};
-    vec3 v1 = {1, 0, -1};
-    vec3 norm = cross(v0, v1);
-
-    size_t handle = glGenLists(1);
-
-    glNewList(handle, GL_COMPILE);
-        glBegin(GL_QUADS);
-            for (size_t i = 0; i < 4; i++)
-                glVertex3fv(verts[i]);
-            glNormal3f(norm.x, norm.y, norm.z);
-        glEnd();
-    glEndList();
-
-    return handle;
-}        
 
 void draw_weapon() {
 
@@ -345,7 +308,6 @@ void display() {
                 int score = arrow.get_score(target);
                 printf("Hit! (%d)\n", score);
                 player.score += score;
-                printf("Current score: %d\n", player.score);
                 arrow.state = STUCK;
             } else {
                 arrow.simulate();
@@ -391,6 +353,10 @@ void display() {
         glPopMatrix();
 
     glPopMatrix();
+
+    // display user score
+    std::string score_str = "Score: " + std::to_string(player.score);
+    draw_text(20, 20, score_str.c_str());
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -593,8 +559,6 @@ int init() {
     );
 
     g_axes = makes_axes();
-    g_target = make_target();
-    g_earth = make_earth();
     g_bow = make_bow();
 
     return 0;

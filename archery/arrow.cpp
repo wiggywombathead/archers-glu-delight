@@ -25,6 +25,7 @@ void Arrow::make_handle() {
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
             draw_capped_cylinder(thickness, length);
+            glutSolidSphere(thickness, 128, 128);
         glPopMatrix();
     glEndList();
 }

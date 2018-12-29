@@ -1,5 +1,5 @@
 INC = -L/usr/X11R6/lib
-LDLIBS = -lglut -lGL -lGLU -lX11 -lm 
+LDLIBS = -lglut -lGL -lGLU -lX11 -lm -lpng
 
 CXX = g++
 CXXFLAGS = -Wall -g -O3

@@ -1,25 +1,27 @@
 # TODO
-- [ ] Collisions
-  - [x] Working on : figure out why it fails with inclusion of z-axis
-  - [x] Fix the jitter when arrow first hits target
-- [ ] Textures
-- [x] Scoring
-  - [ ] Now fix bug when target is moving
+- [x] Textures
+  - [ ] Fix texture glitches
 - [ ] Adjustable difficulty
   - [x] Moving targets
   - [ ] Limited arrows
   - [ ] Time limit
 - [ ] Regulate/display FPS
 - [ ] Fire straight up
-- [x] Nock arrow and draw string (varying power)
 - [ ] Smooth walking?
 - [ ] Smoother bow (adjustable with # segments)
-- [x] Make bow
-- [x] Make arrow
-- [x] Classes
-- [x] Get arrow to simulate physics
+- [x] Scoring
+  - [ ] Now fix bug when target is moving
+- [x] Arrow head in direction of travel
+  - [ ] Not always the case e.g. if facing different direction
 - [x] Slow down time
   - [ ] Get slow motion working correctly (not just for gravity)
 - [x] Pause
   - [ ] Make unpausing hack more elegant
-- [x] Arrow head in direction of travel
+- [x] Collisions
+  - [x] Working on : figure out why it fails with inclusion of z-axis
+  - [x] Fix the jitter when arrow first hits target
+- [x] Nock arrow and draw string (varying power)
+- [x] Make bow
+- [x] Make arrow
+- [x] Classes
+- [x] Get arrow to simulate physics

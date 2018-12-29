@@ -56,7 +56,13 @@ struct vec3 {
     }
 };
 
+void draw_text(const int, const int, const char *);
+
+unsigned int load_and_bind_tex(const char *f);
+int png_load(const char *f, int *w, int *h, char **img);
+
 void draw_capped_cylinder(const float r, const float h, const int slices=32, const int stacks=32);
+
 std::ostream& operator<<(std::ostream &strm, const vec3& v);
 vec3 cross(vec3, vec3);
 float dot(vec3, vec3);
