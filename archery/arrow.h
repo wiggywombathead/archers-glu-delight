@@ -26,6 +26,8 @@ public:
     float pitch, yaw;   // arrow orientation
     float pulled;       // percentage pulled
 
+    int texture;
+
     Arrow(float t, float l);
     void make_handle();
 

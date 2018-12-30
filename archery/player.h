@@ -13,7 +13,7 @@ public:
     float roll;
 
     float power;
-    unsigned int score;
+    int score;
 
     Player(vec3);
     void see();

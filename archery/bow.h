@@ -9,6 +9,8 @@ public:
     float thickness;
     float length;
 
+    int texture;
+
     Bow(float t, float l);
     void make_handle();
     void draw();

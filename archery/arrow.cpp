@@ -21,11 +21,57 @@ Arrow::Arrow(float t, float l) {
 
 void Arrow::make_handle() {
     handle = glGenLists(1);
+    texture = load_and_bind_tex("images/arrow.png");
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+            glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+            glEnable(GL_TEXTURE_GEN_S);
+            glEnable(GL_TEXTURE_GEN_T);
+            glEnable(GL_TEXTURE_2D);
+
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
             draw_capped_cylinder(thickness, length);
-            glutSolidSphere(thickness, 128, 128);
+
+            glDisable(GL_TEXTURE_2D);
+
+            glutSolidSphere(2 * thickness, 128, 128);
+
+            glPushMatrix();
+                glTranslatef(0, thickness + 0.0125, length);
+                glRotatef(-90, 0, 0, 1);
+                glScalef(0.025, 0.0125, 0.05);
+                glutSolidCube(1);
+            glPopMatrix();
+
+            glPushMatrix();
+                glTranslatef(
+                        thickness * cos(30 * 180 / M_PI) + 0.025, 
+                        - (thickness * sin(30 * 180 / M_PI) + 0.025),
+                        length
+                );
+                glRotatef(120, 0, 0, 1);
+                glScalef(0.025, 0.0125, 0.05);
+                glutSolidCube(1);
+            glPopMatrix();
+
+            glPushMatrix();
+                glTranslatef(
+                        -(thickness * cos(30 * 180 / M_PI) + 0.025),
+                        -(thickness * sin(30 * 180 / M_PI) + 0.025),
+                        length
+                );
+                glRotatef(240, 0, 0, 1);
+                glScalef(0.025, 0.0125, 0.05);
+                glutSolidCube(1);
+            glPopMatrix();
         glPopMatrix();
     glEndList();
 }
@@ -50,8 +96,8 @@ void Arrow::simulate() {
         pos.y = 0;
         vel.y *= -0.5;
 
-        vel.x *= 0.8;
-        vel.z *= 0.8;
+        vel.x *= 0.5;
+        vel.z *= 0.5;
     }
 
     //glutPostRedisplay();
@@ -127,5 +173,8 @@ void Arrow::draw_stuck(Target& t) {
 
 int Arrow::get_score(Target& t) {
     float seg_width = t.radius / t.segments;
-    return t.segments + 1 - ceil(dist(pos, t.pos)/seg_width);
+    float dist2d = sqrt(
+            pow(pos.x - t.pos.x, 2) + pow(pos.y - t.pos.y, 2)
+    );
+    return t.segments + 1 - ceil(dist2d / seg_width);
 }

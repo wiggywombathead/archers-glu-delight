@@ -29,9 +29,7 @@ bool paused = false;
 int last_x = 320;
 int last_y = 320;
 
-size_t g_target;    // target
-size_t g_earth;     // the ground
-
+size_t g_earth;
 size_t g_axes;
 
 enum {
@@ -52,7 +50,7 @@ enum ArrowParts {
 Player player({0, 2, 5});
 Bow bow(0.02f, 0.8f);
 Arrow arrow(0.01f, 0.8);
-Target target({0, 1, -0}, 1, 1);
+Target target({0, 1.5, -2}, 1, 1);
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -146,7 +144,7 @@ void set_light(const light_t &light) {
     glEnable(light.name);
 }
 
-size_t makes_axes() {
+size_t make_axes() {
     static const float verts[3][3] = {
         {1, 0, 0},
         {0, 1, 0},
@@ -175,6 +173,43 @@ void draw_axes() {
         glScalef(2, 2, 2);
         glCallList(g_axes);
     glPopMatrix();
+}
+
+size_t make_earth() {
+    size_t handle = glGenLists(1);
+    int tex = load_and_bind_tex("images/grass.png");
+
+    glNewList(handle, GL_COMPILE);
+        glPushMatrix();
+            glBindTexture(GL_TEXTURE_2D, tex);
+
+            glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+            glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+            glEnable(GL_TEXTURE_GEN_S);
+            glEnable(GL_TEXTURE_GEN_T);
+            glEnable(GL_TEXTURE_2D);
+
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+            glTranslatef(0, -1, 0);
+            glScalef(50, 1, 50);
+            glRotatef(90, 1, 0, 0);
+            glutSolidCube(1);
+
+            glDisable(GL_TEXTURE_2D);
+            glEnable(GL_TEXTURE_GEN_S);
+            glEnable(GL_TEXTURE_GEN_T);
+        glPopMatrix();
+    glEndList();
+    
+    return handle;
+}
+
+void draw_earth() {
+    glCallList(g_earth);
 }
 
 size_t make_arrow() {
@@ -294,9 +329,10 @@ void display() {
         // draw weapon
         bow.draw();
 
-        set_material(brass);
         if (arrow.state == NOCKED)
             arrow.draw_nocked();
+
+        set_material(brass);
 
         // translate everything to camera position/view
         player.see();
@@ -329,13 +365,7 @@ void display() {
         target.draw();
 
         // draw the ground
-        glPushMatrix();
-            set_material(porcelain);
-            glTranslatef(0, -1, 0);
-            glScalef(50, 2, 50);
-            glutSolidCube(1);
-            // glCallList(g_earth);
-        glPopMatrix();
+        glCallList(g_earth);
 
         glDisable(GL_LIGHTING);
 
@@ -353,6 +383,8 @@ void display() {
         glPopMatrix();
 
     glPopMatrix();
+
+    glDisable(GL_DEPTH_TEST);
 
     // display user score
     std::string score_str = "Score: " + std::to_string(player.score);
@@ -551,6 +583,7 @@ int init() {
     bow.make_handle();
     arrow.make_handle();
     target.make_handle();
+    g_earth = make_earth();
 
     bow_str_len = 2 * (
             bow_handle_len / 2 + 
@@ -558,7 +591,7 @@ int init() {
             bow_tip_len * cos(2 * bow_curve * M_PI / 180)
     );
 
-    g_axes = makes_axes();
+    g_axes = make_axes();
     g_bow = make_bow();
 
     return 0;

@@ -12,7 +12,7 @@ Target::Target(vec3 p, float r, float t) {
 void Target::make_handle() {
 
     handle = glGenLists(1);
-    texture = load_and_bind_tex("images/target.png");
+    texture = load_and_bind_tex("images/crate.png");
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
@@ -28,8 +28,8 @@ void Target::make_handle() {
             glEnable(GL_TEXTURE_2D);
 
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
             draw_capped_cylinder(radius, 0.2f);
 
@@ -43,7 +43,7 @@ void Target::make_handle() {
 void Target::draw() {
     glPushMatrix();
         glRotatef(180, 0, 1, 0);
-        glTranslatef(pos.x, pos.y, pos.z);
+        glTranslatef(pos.x, pos.y, -pos.z);
         glCallList(handle);
     glPopMatrix();
 }
