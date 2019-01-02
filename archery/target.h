@@ -9,6 +9,7 @@ public:
     size_t handle;
     float radius;
     float thickness;
+    float margin;   // extra box added when calculating collision
     vec3 pos;
 
     unsigned int segments = 5;

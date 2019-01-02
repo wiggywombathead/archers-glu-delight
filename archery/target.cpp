@@ -7,6 +7,7 @@ Target::Target(vec3 p, float r, float t) {
     pos = p;
     radius = r;
     thickness = t;
+    margin = 0.25 * thickness;
 }
 
 void Target::make_handle() {
@@ -31,7 +32,7 @@ void Target::make_handle() {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
-            draw_capped_cylinder(radius, 0.2f);
+            draw_capped_cylinder(radius, thickness);
 
             glDisable(GL_TEXTURE_2D);
             glDisable(GL_TEXTURE_GEN_S);
@@ -42,8 +43,8 @@ void Target::make_handle() {
 
 void Target::draw() {
     glPushMatrix();
-        glRotatef(180, 0, 1, 0);
-        glTranslatef(pos.x, pos.y, -pos.z);
+        // glRotatef(180, 0, 1, 0);
+        glTranslatef(pos.x, pos.y, pos.z);
         glCallList(handle);
     glPopMatrix();
 }

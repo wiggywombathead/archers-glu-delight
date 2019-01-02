@@ -16,7 +16,7 @@ Arrow::Arrow(float t, float l) {
 
     pos = {0, 3, 0};
     vel = {0, 0, 0};
-    state = NOCKED;
+    state = STASHED;
 }
 
 void Arrow::make_handle() {
@@ -25,6 +25,7 @@ void Arrow::make_handle() {
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
+        /*
             glBindTexture(GL_TEXTURE_2D, texture);
 
             glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -37,40 +38,36 @@ void Arrow::make_handle() {
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        */
 
+            // shaft
             draw_capped_cylinder(thickness, length);
 
+            glDisable(GL_TEXTURE_GEN_S);
+            glDisable(GL_TEXTURE_GEN_T);
             glDisable(GL_TEXTURE_2D);
 
-            glutSolidSphere(2 * thickness, 128, 128);
-
+            // head
             glPushMatrix();
-                glTranslatef(0, thickness + 0.0125, length);
-                glRotatef(-90, 0, 0, 1);
-                glScalef(0.025, 0.0125, 0.05);
+                glRotatef(180, 0, 1, 0);
+                draw_cone(thickness, 0.2);
+            glPopMatrix();
+
+            // fletchings
+            glPushMatrix();
+                glTranslatef(0, 0, length);
+                glRotatef(90, 0, 0, 1);
+                glScalef(0.1, 0.01, 0.1);
                 glutSolidCube(1);
             glPopMatrix();
 
             glPushMatrix();
-                glTranslatef(
-                        thickness * cos(30 * 180 / M_PI) + 0.025, 
-                        - (thickness * sin(30 * 180 / M_PI) + 0.025),
-                        length
-                );
-                glRotatef(120, 0, 0, 1);
-                glScalef(0.025, 0.0125, 0.05);
+                glTranslatef(0, 0, length);
+                glScalef(0.1, 0.01, 0.1);
                 glutSolidCube(1);
             glPopMatrix();
 
             glPushMatrix();
-                glTranslatef(
-                        -(thickness * cos(30 * 180 / M_PI) + 0.025),
-                        -(thickness * sin(30 * 180 / M_PI) + 0.025),
-                        length
-                );
-                glRotatef(240, 0, 0, 1);
-                glScalef(0.025, 0.0125, 0.05);
-                glutSolidCube(1);
             glPopMatrix();
         glPopMatrix();
     glEndList();
@@ -100,7 +97,7 @@ void Arrow::simulate() {
         vel.z *= 0.5;
     }
 
-    //glutPostRedisplay();
+    // glutPostRedisplay();
 }
 
 void Arrow::draw_nocked() {
@@ -140,7 +137,7 @@ bool Arrow::has_hit(Target& t) {
     if (
         (pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z >= t.pos.z - t.thickness) && (pos.z <= t.pos.z)
+        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 5 * t.margin)
     ) {
         if (state == FIRED) {
             offset = {

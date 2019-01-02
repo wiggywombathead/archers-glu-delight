@@ -2,6 +2,8 @@
 #include <math.h>
 #include <iostream>
 
+#include <GL/glew.h>
+
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
@@ -49,8 +51,8 @@ enum ArrowParts {
 
 Player player({0, 2, 5});
 Bow bow(0.02f, 0.8f);
-Arrow arrow(0.01f, 0.8);
-Target target({0, 1.5, -2}, 1, 1);
+Arrow arrow(0.01f, 1);
+Target target({0, 1.5, -2}, 1.5, 0.4);
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -194,7 +196,7 @@ size_t make_earth() {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 
-            glTranslatef(0, -1, 0);
+            glTranslatef(0, -0.5, 0);
             glScalef(50, 1, 50);
             glRotatef(90, 1, 0, 0);
             glutSolidCube(1);
@@ -388,7 +390,7 @@ void display() {
 
     // display user score
     std::string score_str = "Score: " + std::to_string(player.score);
-    draw_text(20, 20, score_str.c_str());
+    draw_text(20, 960, score_str.c_str());
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -602,7 +604,7 @@ int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
 
-    glutInitWindowSize(640, 640);
+    glutInitWindowSize(WIN_W, WIN_H);
     glutInitWindowPosition(100, 100);
 
     glutCreateWindow("Archery");
@@ -621,3 +623,134 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+/*
+char* read_shader_source(const char* filename) {
+	char* buffer = NULL;
+
+	FILE* fp = fopen(filename, "r");
+	if (fp!=NULL)
+	{
+		struct stat status_buf;
+		stat(filename, &status_buf); // find out how big it is
+
+		buffer = new char[status_buf.st_size+1];
+		// read in the file
+		fread(buffer, 1, status_buf.st_size, fp); 
+		buffer[status_buf.st_size] = '\0'; // null terminate it
+
+		fclose(fp);
+	}
+	else
+	{
+		fprintf(stderr, "Failed to open shader file %s for reading\n", filename);
+		exit(1);
+	}
+
+	return buffer;
+}
+
+void print_shader_info_log(unsigned int shader_obj)
+{
+	int len = 0;
+	glGetShaderiv(shader_obj, GL_INFO_LOG_LENGTH, &len);
+	if (len>1)
+	{
+		char* log = new char[len];
+		int s_len = 0;
+		glGetShaderInfoLog(shader_obj, len, &s_len, log);
+		fprintf(stderr, "%s", log);
+		delete[] log;
+	}
+}
+
+void print_program_info_log(unsigned int shader_obj)
+{
+	int len = 0;
+	glGetProgramiv(shader_obj, GL_INFO_LOG_LENGTH, &len);
+	if (len>1)
+	{
+		char* log = new char[len];
+		int s_len = 0;
+		glGetProgramInfoLog(shader_obj, len, &s_len, log);
+		fprintf(stderr, "%s", log);
+		delete[] log;
+	}
+}
+
+void create_and_compile_shaders(
+		const char* vertex_shader_filename,
+		const char* fragment_shader_filename
+	)
+{
+	fprintf(stderr, "create_and_compile shaders called: vertex shader = %s, fragment shader = %s\n",
+						vertex_shader_filename, fragment_shader_filename );
+	fprintf(stderr, "Shading Language version %s\n", 
+			glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	// read the shader source files
+	char* vertex_source = read_shader_source(vertex_shader_filename);
+	char* frag_source = read_shader_source(fragment_shader_filename);
+
+	if (vertex_source && frag_source)
+	{
+		// create shader program object and shader objects
+		g_vertex_obj = glCreateShader(GL_VERTEX_SHADER);
+		g_fragment_obj = glCreateShader(GL_FRAGMENT_SHADER);
+
+
+		// put sources into shader objects
+		glShaderSource(g_vertex_obj, 1, (const char**)&vertex_source, NULL);
+		glShaderSource(g_fragment_obj, 1, (const char**)&frag_source, NULL);
+		
+		// attempt to compile and link
+		glCompileShader(g_vertex_obj);
+
+		// check if it has compile ok
+		int compiled = 0;
+		glGetShaderiv(g_vertex_obj, GL_COMPILE_STATUS, &compiled);
+		if (compiled==0)
+		{
+			// failed to compile vertex shader
+			fprintf(stderr, "Failed to compile vertex shader\n");
+			print_shader_info_log(g_vertex_obj);
+
+			exit(1);
+		}
+
+		glCompileShader(g_fragment_obj);
+		glGetShaderiv(g_fragment_obj, GL_COMPILE_STATUS, &compiled);
+		if (compiled==0)
+		{
+			// failed to compile fragment shader
+			fprintf(stderr, "Failed to compile fragment shader\n");
+			print_shader_info_log(g_fragment_obj);
+			exit(1);
+		}
+
+		// attach shaders to the program object
+		g_program_obj = glCreateProgram();
+		glAttachShader(g_program_obj, g_vertex_obj);
+		glAttachShader(g_program_obj, g_fragment_obj);
+
+		// try to link the program
+		glLinkProgram(g_program_obj);
+
+		int linked = 0;
+		glGetProgramiv(g_program_obj, GL_LINK_STATUS, &linked);
+		if (linked==0)
+		{
+			// failed to link program 
+			fprintf(stderr, "Failed to link shader program\n");
+			print_program_info_log(g_program_obj);
+			exit(1);
+		}
+
+		delete[] vertex_source;
+		delete[] frag_source;
+	}
+
+	if (glIsProgram(g_program_obj))
+		glUseProgram(g_program_obj);
+}
+*/

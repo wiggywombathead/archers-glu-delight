@@ -14,6 +14,7 @@ void Bow::make_handle() {
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
+        /*
             glBindTexture(GL_TEXTURE_2D, texture);
 
             glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -26,11 +27,15 @@ void Bow::make_handle() {
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        */
 
+        glPushMatrix();
             glRotatef(-80, 1, 0, 0);
             draw_capped_cylinder(thickness, length);
+        glPopMatrix();
 
-            glRotatef(170, 1, 0, 0);
+        glPushMatrix();
+            glRotatef(80, 1, 0, 0);
             draw_capped_cylinder(thickness, length);
         glPopMatrix();
     glEndList();

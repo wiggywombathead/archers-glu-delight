@@ -26,6 +26,13 @@ void draw_capped_cylinder(const float r, const float h, const int slices, const 
     glPopMatrix();
 }
 
+void draw_cone(const float base, const float h, const int slices, const int stacks) {
+    GLUquadricObj *obj = gluNewQuadric();
+    gluQuadricNormals(obj, GLU_SMOOTH);
+
+    gluCylinder(obj, base, 0, h, slices, stacks);
+}
+
 vec3 cross(vec3 a, vec3 b) {
     vec3 res = {
         (a.y * b.z) - (a.z * b.y),
