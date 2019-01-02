@@ -8,6 +8,12 @@ Player::Player(vec3 p) {
     pos = p;
     pitch = yaw = roll = 0.f;
     power = 0.f;
+
+    for (size_t i = 0; i < MAX_CAPACITY; i++) {
+        quiver[i] = Arrow(0.1f, 1.0f);
+    }
+    capacity = 32;
+    curr_arrow = 0;
 }
 
 void Player::see() {
@@ -22,15 +28,15 @@ void Player::see() {
 }
 
 void Player::nock(Arrow &a) {
-    a.state = NOCKED;
+    quiver[curr_arrow].state = NOCKED;
+    quiver[curr_arrow].pulled = NOCKED;
     power = 0.f;
-    a.pulled = 0.f;
 }
 
 void Player::pull(Arrow &a, float amnt) {
     power += amnt;
     power = (power > 1.5f) ? 1.5f : power;
-    a.pulled = power / 1.5f;
+    quiver[curr_arrow].pulled = power / 1.5f;
 }
 
 void Player::fire(Arrow &a) {

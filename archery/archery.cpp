@@ -360,7 +360,7 @@ void display() {
         float rad = cnt * 180 / M_PI;
         rad /= 10000;
         vec3 motion = {cos(rad)/25, 0, 0};
-        // target.move(motion);
+        target.move(motion);
         cnt++;
 
         // draw the target

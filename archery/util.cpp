@@ -42,6 +42,16 @@ vec3 cross(vec3 a, vec3 b) {
     return res;
 }
 
+vec3 normalize(vec3 v) {
+    float l = v.len();
+    vec3 norm = {
+        v.x / l,
+        v.y / l,
+        v.z / l
+    };
+    return norm;
+}
+
 float dot(vec3 a, vec3 b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }

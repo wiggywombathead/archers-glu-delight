@@ -28,6 +28,7 @@ public:
 
     int texture;
 
+    Arrow();
     Arrow(float t, float l);
     void make_handle();
 

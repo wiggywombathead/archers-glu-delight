@@ -66,6 +66,7 @@ void draw_cone(const float b, const float h, const int slices=32, const int stac
 
 std::ostream& operator<<(std::ostream &strm, const vec3& v);
 vec3 cross(vec3, vec3);
+vec3 normalize(vec3);
 float dot(vec3, vec3);
 float dist(vec3, vec3);
 

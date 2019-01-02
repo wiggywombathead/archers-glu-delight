@@ -5,6 +5,8 @@
 #include "bow.h"
 #include "arrow.h"
 
+#define MAX_CAPACITY 32
+
 class Player {
 public:
     vec3 pos;
@@ -12,6 +14,9 @@ public:
     float yaw;
     float roll;
 
+    Arrow quiver[MAX_CAPACITY];
+    int curr_arrow;
+    unsigned int capacity;
     float power;
     int score;
 

@@ -10,6 +10,13 @@
 clock_t prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
 
+Arrow::Arrow() {
+    pos = {0, 0, 0};
+    thickness = length = 0.0f;
+    pitch = yaw = 0.0f;
+    state = STASHED;
+}
+
 Arrow::Arrow(float t, float l) {
     thickness = t;
     length = l;
@@ -134,10 +141,15 @@ void Arrow::draw_flight() {
 }
 
 bool Arrow::has_hit(Target& t) {
+    vec3 tail = normalize(vel * -1) * length;
     if (
-        (pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
+        ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 5 * t.margin)
+        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 5 * t.margin)) ||
+
+        ((tail.x >= t.pos.x - t.radius) && (tail.x <= t.pos.x + t.radius) &&
+        (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
+        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - 5 * t.margin))
     ) {
         if (state == FIRED) {
             offset = {

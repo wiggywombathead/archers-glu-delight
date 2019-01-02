@@ -51,4 +51,5 @@ void Target::draw() {
 
 void Target::move(vec3 d) {
     pos += d;
+    glutPostRedisplay();
 }
