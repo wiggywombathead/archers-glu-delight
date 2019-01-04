@@ -145,11 +145,11 @@ bool Arrow::has_hit(Target& t) {
     if (
         ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 5 * t.margin)) ||
+        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - t.margin)) ||
 
         ((tail.x >= t.pos.x - t.radius) && (tail.x <= t.pos.x + t.radius) &&
         (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
-        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - 5 * t.margin))
+        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - t.margin))
     ) {
         if (state == FIRED) {
             offset = {
@@ -165,7 +165,7 @@ bool Arrow::has_hit(Target& t) {
     }
 }
 
-void Arrow::draw_stuck(Target& t) {
+void Arrow::draw_stuck_in(Target& t) {
     pos = {
         t.pos.x + offset.x,
         t.pos.y + offset.y,

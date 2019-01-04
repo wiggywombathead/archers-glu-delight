@@ -3,11 +3,18 @@
 #include <GL/glut.h>
 #include <iostream>
 
+Target::Target() {
+    pos = {0, 0, 0};
+    radius = 2.0f;
+    thickness = 0.2f;
+    margin = 0.4 * thickness;
+}
+
 Target::Target(vec3 p, float r, float t) {
     pos = p;
     radius = r;
     thickness = t;
-    margin = 0.25 * thickness;
+    margin = 0.4 * thickness;
 }
 
 void Target::make_handle() {
@@ -28,7 +35,7 @@ void Target::make_handle() {
             glEnable(GL_TEXTURE_GEN_T);
             glEnable(GL_TEXTURE_2D);
 
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 

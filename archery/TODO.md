@@ -1,10 +1,11 @@
 # TODO
-- [x] Textures
-  - [ ] Fix texture glitches
 - [ ] Adjustable difficulty
   - [x] Moving targets
-  - [ ] Limited arrows
+  - [x] Limited arrows
   - [ ] Time limit
+- [ ] Lights
+- [ ] Shaders
+- [ ] Fix unintentional slowmo for multiple arrows
 - [ ] Regulate/display FPS
 - [ ] Fire straight up
 - [ ] Smooth walking?
@@ -17,6 +18,8 @@
   - [ ] Get slow motion working correctly (not just for gravity)
 - [x] Pause
   - [ ] Make unpausing hack more elegant
+- [x] Textures
+  - [x] Fix texture glitches
 - [x] Collisions
   - [x] Working on : figure out why it fails with inclusion of z-axis
   - [x] Fix the jitter when arrow first hits target

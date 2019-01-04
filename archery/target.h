@@ -15,6 +15,7 @@ public:
     unsigned int segments = 5;
     int texture;
 
+    Target();
     Target(vec3, float, float);
     void make_handle();
 

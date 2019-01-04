@@ -50,6 +50,8 @@ enum ArrowParts {
 };
 
 Player player({0, 2, 5});
+Arrow quiver[64];
+
 Bow bow(0.02f, 0.8f);
 Arrow arrow(0.01f, 1);
 Target target({0, 1.5, -2}, 1.5, 0.4);
@@ -105,7 +107,7 @@ light_t white_light = {
     {0.0f, 0.0f, 0.0f, 1.0f},
     {1.0f, 1.0f, 1.0f, 1.0f},
     {1.0f, 1.0f, 1.0f, 1.0f},
-    {0.0f, 5.0f, 0.0f, 1.0f}
+    {1.0f, 5.0f, 1.0f, 1.0f}
 };
 
 light_t red_light = {
@@ -113,21 +115,29 @@ light_t red_light = {
 	{0.0f, 0.0f, 0.0f, 1.0f},
 	{1.0f, 0.0f, 0.0f, 1.0f},
 	{1.0f, 1.0f, 1.0f, 1.0f},
-	{1.0f, 2.0f, 3.5f, 1.0f}
+	{0.0f, 5.0f, 1.0f, 1.0f}
 };
 
 light_t green_light = {
-    GL_LIGHT1,
+    GL_LIGHT2,
 	{0.0f, 0.0f, 0.0f, 1.0f},
 	{0.0f, 1.0f, 0.0f, 1.0f},
 	{1.0f, 1.0f, 1.0f, 1.0f},
-	{-3.0f, 2.0f, 3.5f, 1.0f}
+	{-1.0f, 5.0f, 0.0f, 1.0f}
 };
 
-light_t lights[3] = {
-    white_light, red_light, green_light
+light_t blue_light = {
+    GL_LIGHT3,
+	{0.0f, 0.0f, 0.0f, 1.0f},
+	{0.0f, 0.0f, 1.0f, 1.0f},
+	{1.0f, 1.0f, 1.0f, 1.0f},
+	{1.0f, 5.0f, 0.0f, 1.0f}
 };
-unsigned int cur_light;
+
+light_t lights[] = {
+   red_light, green_light, blue_light
+};
+unsigned int curr_light;
 int num_lights = 3;
 
 void set_material(const material_t &mat) {
@@ -142,6 +152,13 @@ void set_light(const light_t &light) {
     glLightfv(light.name, GL_DIFFUSE, light.diffuse);
     glLightfv(light.name, GL_SPECULAR, light.specular);
     glLightfv(light.name, GL_POSITION, light.position);
+
+	float direction[3] = {
+				-light.position[0],
+				-light.position[1],
+				-light.position[2]};
+	glLightfv(light.name, GL_SPOT_DIRECTION, direction);
+	glLightf(light.name, GL_SPOT_CUTOFF, 5.0f);
 
     glEnable(light.name);
 }
@@ -170,19 +187,45 @@ size_t make_axes() {
 }
 
 void draw_axes() {
+    glDisable(GL_LIGHTING);
+    glMatrixMode(GL_MODELVIEW);
+
     glPushMatrix();
         glTranslatef(0, 0.01, 0);
         glScalef(2, 2, 2);
         glCallList(g_axes);
     glPopMatrix();
+
+    glEnable(GL_LIGHTING);
+}
+
+float g_angle = 0.0f;
+void draw_lights() {
+    glDisable(GL_LIGHTING);
+    glMatrixMode(GL_MODELVIEW);
+
+    glPushMatrix();
+        glRotatef(g_angle, 0, 1, 0);
+        
+        glPointSize(4);
+        glBegin(GL_POINTS);
+            for (size_t i = 0; i < num_lights; i++) {
+                glColor3fv(lights[i].diffuse);
+                glVertex4fv(lights[i].position);
+            }
+        glEnd();
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
 }
 
 size_t make_earth() {
     size_t handle = glGenLists(1);
-    int tex = load_and_bind_tex("images/grass.png");
+    // int tex = load_and_bind_tex("images/grass.png");
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
+        /*
             glBindTexture(GL_TEXTURE_2D, tex);
 
             glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -195,6 +238,7 @@ size_t make_earth() {
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        */
 
             glTranslatef(0, -0.5, 0);
             glScalef(50, 1, 50);
@@ -310,6 +354,31 @@ void draw_weapon() {
     glPopMatrix();
 }
 
+void simulate_arrows() {
+    for (size_t i = 0; i < player.curr_arrow; i++) {
+
+        Arrow *a = &quiver[i];
+
+        if (a->state == FIRED) {
+
+            // detect first collision
+            if (a->has_hit(target)) {
+                int score = a->get_score(target);
+                printf("Hit! (%d)\n", score);
+                player.score += score;
+                a->state = STUCK;
+            } else {
+                a->simulate();
+                a->draw_flight();
+            }
+        }
+
+        if (a->state == STUCK) {
+            a->draw_stuck_in(target);
+        }
+    }
+}
+
 int cnt = 0;
         
 void display() {
@@ -331,31 +400,15 @@ void display() {
         // draw weapon
         bow.draw();
 
-        if (arrow.state == NOCKED)
-            arrow.draw_nocked();
-
-        set_material(brass);
+        // draw current arrow
+        if (quiver[player.curr_arrow].state == NOCKED) {
+            quiver[player.curr_arrow].draw_nocked();
+        }
 
         // translate everything to camera position/view
         player.see();
 
-        if (arrow.state == FIRED) {
-
-            // detect first collision
-            if (arrow.has_hit(target)) {
-                int score = arrow.get_score(target);
-                printf("Hit! (%d)\n", score);
-                player.score += score;
-                arrow.state = STUCK;
-            } else {
-                arrow.simulate();
-                arrow.draw_flight();
-            }
-        }
-
-        if (arrow.state == STUCK) {
-            arrow.draw_stuck(target);
-        }
+        simulate_arrows();
 
         float rad = cnt * 180 / M_PI;
         rad /= 10000;
@@ -367,30 +420,26 @@ void display() {
         target.draw();
 
         // draw the ground
-        glCallList(g_earth);
-
-        glDisable(GL_LIGHTING);
+        draw_earth();
 
         // draw axes
         draw_axes();
 
-        glPushMatrix();
-            glBegin(GL_POINTS);
-            glPointSize(4);
-            glColor3f(1, 1, 1);
-            glVertex4fv(white_light.position);
-            glColor3f(0, 1, 0);
-            glVertex4fv(red_light.position);
-            glEnd();
-        glPopMatrix();
+        draw_lights();
 
     glPopMatrix();
 
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
 
     // display user score
     std::string score_str = "Score: " + std::to_string(player.score);
     draw_text(20, 960, score_str.c_str());
+
+    std::string arrows_remaining = "Arrows: " + 
+        std::to_string(player.capacity - player.curr_arrow) + "/" +
+        std::to_string(player.capacity);
+    draw_text(20, 920, arrows_remaining.c_str());
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -442,15 +491,15 @@ void keyboard(unsigned char k, int, int) {
     case ']':
         break;
     case ',':
-        glDisable(lights[cur_light].name);
-        cur_light++;
-        cur_light %= num_lights;
-        set_light(lights[cur_light]);
+        glDisable(lights[curr_light].name);
+        curr_light++;
+        curr_light %= num_lights;
+        set_light(lights[curr_light]);
         break;
     case '.':
-        glDisable(lights[cur_light].name);
-        cur_light = (cur_light == 0) ? num_lights - 1 : cur_light - 1;
-        set_light(lights[cur_light]);
+        glDisable(lights[curr_light].name);
+        curr_light = (curr_light == 0) ? num_lights - 1 : curr_light - 1;
+        set_light(lights[curr_light]);
         break;
     }
 
@@ -495,13 +544,14 @@ void mouse_click(int button, int state, int x, int y) {
 
         if (state == GLUT_UP) {
             pulling = false;
-            player.fire(arrow);
+            player.fire(quiver[player.curr_arrow]);
         }
 
         break;
     case GLUT_RIGHT_BUTTON:
-        if (state == GLUT_DOWN)
-            player.nock(arrow);
+        if (state == GLUT_DOWN) {
+            player.nock(quiver[player.curr_arrow]);
+        }
 
         break;
     }
@@ -514,8 +564,23 @@ void idle() {
 
         dt_pull = ((float) (pull_now - pull_last)) / CLOCKS_PER_SEC;
         float amount = dt_pull * 10;
-        player.pull(arrow, amount);
+        player.pull(quiver[player.curr_arrow], amount);
     }
+
+    white_light.position[0] = player.pos.x;
+    white_light.position[1] = player.pos.y;
+    white_light.position[2] = player.pos.z;
+    white_light.position[3] = 20;
+    set_light(white_light);
+
+    glPushMatrix();
+        for (size_t i = 0; i < num_lights; i++) {
+            set_light(lights[i]);
+        }
+    glPopMatrix();
+
+    g_angle += 3;
+    glutPostRedisplay();
 }
 
 void mouse_motion(int x, int y) {
@@ -580,7 +645,10 @@ int init() {
 
     glutSetCursor(GLUT_CURSOR_NONE);
 
-    set_light(lights[cur_light]);
+    for (size_t i = 0; i < MAX_CAPACITY; i++) {
+        quiver[i] = Arrow(0.01f, 1.0f);
+        quiver[i].make_handle();
+    }
 
     bow.make_handle();
     arrow.make_handle();

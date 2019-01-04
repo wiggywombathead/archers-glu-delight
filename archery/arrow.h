@@ -39,7 +39,7 @@ public:
 
     bool has_hit(Target&);
     int get_score(Target&);
-    void draw_stuck(Target&);
+    void draw_stuck_in(Target&);
 };
 
 #endif
