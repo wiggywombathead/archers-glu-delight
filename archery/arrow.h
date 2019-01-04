@@ -9,7 +9,8 @@ enum State {
     STASHED,
     NOCKED,
     FIRED,
-    STUCK
+    STUCK,
+    DEAD    // hasn't hit anything and won't
 };
 
 class Arrow {

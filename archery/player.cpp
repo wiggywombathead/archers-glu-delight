@@ -61,33 +61,3 @@ void Player::fire(Arrow &a) {
 
     curr_arrow++;
 }
-
-void Player::draw_scene() {
-
-    if (quiver[curr_arrow].state == NOCKED)
-        quiver[curr_arrow].draw_nocked();
-
-    /*
-    see();
-
-    for (size_t i = 0; i < curr_arrow; i++) {
-
-        if (quiver[i].state == FIRED) {
-            if (quiver[i].has_hit(target)) {
-                int s = quiver[i].get_score(target);
-                score += s;
-                quiver[i].state = STUCK;
-            } else {
-                quiver[i].simulate();
-                quiver[i].draw_flight();
-            }
-        }
-
-        if (quiver[i].state == STUCK) {
-            quiver[i].draw_stuck_in(target);
-        }
-            
-    }
-    */
-
-}

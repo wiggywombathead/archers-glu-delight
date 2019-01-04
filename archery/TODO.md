@@ -1,15 +1,15 @@
 # TODO
+- [ ] Help messages and other polish
 - [ ] Adjustable difficulty
   - [x] Moving targets
   - [x] Limited arrows
   - [ ] Time limit
 - [ ] Lights
 - [ ] Shaders
-- [ ] Fix unintentional slowmo for multiple arrows
+- [ ] Smoother bow (adjustable with # segments)
 - [ ] Regulate/display FPS
 - [ ] Fire straight up
 - [ ] Smooth walking?
-- [ ] Smoother bow (adjustable with # segments)
 - [x] Scoring
   - [ ] Now fix bug when target is moving
 - [x] Arrow head in direction of travel
@@ -18,6 +18,7 @@
   - [ ] Get slow motion working correctly (not just for gravity)
 - [x] Pause
   - [ ] Make unpausing hack more elegant
+- [x] Fix unintentional slowmo for multiple arrows
 - [x] Textures
   - [x] Fix texture glitches
 - [x] Collisions

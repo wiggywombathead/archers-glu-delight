@@ -25,11 +25,13 @@ const int FRAME_INTERVAL = 1 * 1000 / FRAME_RATE;
 bool first_mouse = true;    // avoid jump when first entering
 bool warped = false;        // avoid jump when warping mouse back
 bool escape_mouse = false;
+
 bool paused = false;
+bool want_help = false;
 
 // keep track of last mouse position
-int last_x = 320;
-int last_y = 320;
+int last_x;
+int last_y;
 
 size_t g_earth;
 size_t g_axes;
@@ -50,7 +52,7 @@ enum ArrowParts {
 };
 
 Player player({0, 2, 5});
-Arrow quiver[64];
+Arrow quiver[MAX_CAPACITY];
 
 Bow bow(0.02f, 0.8f);
 Arrow arrow(0.01f, 1);
@@ -153,12 +155,14 @@ void set_light(const light_t &light) {
     glLightfv(light.name, GL_SPECULAR, light.specular);
     glLightfv(light.name, GL_POSITION, light.position);
 
+    /*
 	float direction[3] = {
 				-light.position[0],
 				-light.position[1],
 				-light.position[2]};
 	glLightfv(light.name, GL_SPOT_DIRECTION, direction);
 	glLightf(light.name, GL_SPOT_CUTOFF, 5.0f);
+    */
 
     glEnable(light.name);
 }
@@ -359,6 +363,12 @@ void simulate_arrows() {
 
         Arrow *a = &quiver[i];
 
+        // avoid unnecessary simulation of arrow
+        if (a->state == DEAD) {
+            a->draw_flight();
+            continue;
+        }
+
         if (a->state == FIRED) {
 
             // detect first collision
@@ -379,8 +389,11 @@ void simulate_arrows() {
     }
 }
 
+void display_help() {
+    draw_centered(ORTHO_SIZE / 2, "YOU ASKED FOR HELP");
+}
+
 int cnt = 0;
-        
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -441,6 +454,9 @@ void display() {
         std::to_string(player.capacity);
     draw_text(20, 920, arrows_remaining.c_str());
 
+    if (want_help)
+        display_help();
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(0, WIN_W, 0, WIN_H);
@@ -453,16 +469,32 @@ void display() {
     glEnd();
 
     glutSwapBuffers();
+} 
+
+void reset() {
+    player.score = 0;
+    player.curr_arrow = 0;
+    for (size_t i = 0; i < player.capacity; i++) {
+        quiver[i].state = STASHED;
+    }
 }
 
 void keyboard(unsigned char k, int, int) {
 
     switch (k) {
-    case 'q':
-        exit(1);
+    /* HELP, PAUSE, RESET, QUIT */
+    case 'h':
+        want_help = !want_help;
+        break;
     case 'p':
         paused = !paused;
         break;
+    case 'r':
+        reset();
+        break;
+    case 'q':
+        exit(1);
+    /* PLAYER MOVEMENT */
     case 'w':
         player.pos.x += 0.2 * sin(player.yaw * M_PI / 180);
         player.pos.z -= 0.2 * cos(player.yaw * M_PI / 180);
@@ -479,6 +511,7 @@ void keyboard(unsigned char k, int, int) {
         player.pos.x += 0.2 * sin((90+player.yaw) * M_PI / 180);
         player.pos.z -= 0.2 * cos((90+player.yaw) * M_PI / 180);
         break;
+    /* GAME MODE MANAGEMENT */
     case 'm':
         escape_mouse = !escape_mouse;
         if (escape_mouse)
@@ -489,17 +522,6 @@ void keyboard(unsigned char k, int, int) {
     case '[':
         break;
     case ']':
-        break;
-    case ',':
-        glDisable(lights[curr_light].name);
-        curr_light++;
-        curr_light %= num_lights;
-        set_light(lights[curr_light]);
-        break;
-    case '.':
-        glDisable(lights[curr_light].name);
-        curr_light = (curr_light == 0) ? num_lights - 1 : curr_light - 1;
-        set_light(lights[curr_light]);
         break;
     }
 
@@ -567,11 +589,11 @@ void idle() {
         player.pull(quiver[player.curr_arrow], amount);
     }
 
-    white_light.position[0] = player.pos.x;
-    white_light.position[1] = player.pos.y;
-    white_light.position[2] = player.pos.z;
-    white_light.position[3] = 20;
-    set_light(white_light);
+    // white_light.position[0] = player.pos.x;
+    // white_light.position[1] = player.pos.y;
+    // white_light.position[2] = player.pos.z;
+    // white_light.position[3] = 20;
+    // set_light(white_light);
 
     glPushMatrix();
         for (size_t i = 0; i < num_lights; i++) {

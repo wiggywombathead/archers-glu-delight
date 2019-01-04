@@ -5,6 +5,8 @@
 #include <cmath>
 #include <ostream>
 
+#define ORTHO_SIZE 1000
+
 struct vec3 {
     float x, y, z;
     vec3 operator*(const float& k) {
@@ -57,6 +59,7 @@ struct vec3 {
 };
 
 void draw_text(const int, const int, const char *);
+void draw_centered(const int, const char *);
 
 unsigned int load_and_bind_tex(const char *f);
 int png_load(const char *f, int *w, int *h, char **img);

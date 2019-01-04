@@ -72,7 +72,7 @@ void draw_text(const int x, const int y, const char *str) {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 		glLoadIdentity();
-		gluOrtho2D(0, 1000, 0, 1000);
+		gluOrtho2D(0, ORTHO_SIZE, 0, ORTHO_SIZE);
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
@@ -86,6 +86,18 @@ void draw_text(const int x, const int y, const char *str) {
 
 	glMatrixMode(GL_PROJECTION);
 	glPopMatrix();
+}
+
+void draw_centered(const int y, const char *str) {
+
+    const float scale = 0.25f;
+
+    size_t len = strlen(str);
+    int width = 0;
+    for (size_t i = 0; i < len; i++)
+        width += glutStrokeWidth(GLUT_STROKE_ROMAN, str[i]);
+
+    draw_text(0.5 * (ORTHO_SIZE - width), y, str);
 }
 
 unsigned int load_and_bind_tex(const char *fname) {

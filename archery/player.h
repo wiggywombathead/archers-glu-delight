@@ -29,8 +29,6 @@ public:
     void nock(Arrow&);
     void fire(Arrow&);
     void pull(Arrow&, float);
-
-    void draw_scene();
 };
 
 #endif

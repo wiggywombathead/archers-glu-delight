@@ -82,6 +82,11 @@ void Arrow::make_handle() {
 
 void Arrow::simulate() {
 
+    if (vel.len() < 0.01f) {
+        vel = {0, -1, 0};
+        state = DEAD;
+    }
+
     prev_tick = curr_tick;
     curr_tick = clock();
 
@@ -145,11 +150,11 @@ bool Arrow::has_hit(Target& t) {
     if (
         ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - t.margin)) ||
+        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 5*t.margin)) ||
 
         ((tail.x >= t.pos.x - t.radius) && (tail.x <= t.pos.x + t.radius) &&
         (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
-        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - t.margin))
+        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - 5*t.margin))
     ) {
         if (state == FIRED) {
             offset = {
