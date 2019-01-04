@@ -1,11 +1,13 @@
 # TODO
-- [ ] Help messages and other polish
+- [ ] Skybox?
+- [ ] Wind
 - [ ] Adjustable difficulty
   - [x] Moving targets
   - [x] Limited arrows
   - [ ] Time limit
 - [ ] Lights
-- [ ] Shaders
+- [x] Shaders
+  - [ ] Now get them working better/nicer
 - [ ] Smoother bow (adjustable with # segments)
 - [ ] Regulate/display FPS
 - [ ] Fire straight up
@@ -18,6 +20,7 @@
   - [ ] Get slow motion working correctly (not just for gravity)
 - [x] Pause
   - [ ] Make unpausing hack more elegant
+- [x] Help messages and other polish
 - [x] Fix unintentional slowmo for multiple arrows
 - [x] Textures
   - [x] Fix texture glitches

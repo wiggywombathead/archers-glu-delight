@@ -9,6 +9,7 @@
 
 clock_t prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
+vec3 wind;
 
 Arrow::Arrow() {
     pos = {0, 0, 0};
@@ -28,7 +29,7 @@ Arrow::Arrow(float t, float l) {
 
 void Arrow::make_handle() {
     handle = glGenLists(1);
-    texture = load_and_bind_tex("images/arrow.png");
+    // texture = load_and_bind_tex("images/arrow.png");
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
@@ -150,11 +151,11 @@ bool Arrow::has_hit(Target& t) {
     if (
         ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 5*t.margin)) ||
+        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 8*t.margin)) ||
 
         ((tail.x >= t.pos.x - t.radius) && (tail.x <= t.pos.x + t.radius) &&
         (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
-        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - 5*t.margin))
+        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - 8*t.margin))
     ) {
         if (state == FIRED) {
             offset = {

@@ -33,6 +33,11 @@ bool want_help = false;
 int last_x;
 int last_y;
 
+// to calculate time spent drawing bowstring
+clock_t pull_last, pull_now;
+bool pulling = false;
+float dt_pull;
+
 size_t g_earth;
 size_t g_axes;
 
@@ -51,12 +56,16 @@ enum ArrowParts {
     ARR_PARTS = 3
 };
 
-Player player({0, 2, 5});
+enum Difficulty {
+    PRACTICE,
+    MOVING
+} difficulty;
+
+Player player({0, 2, 10});
 Arrow quiver[MAX_CAPACITY];
 
 Bow bow(0.02f, 0.8f);
-Arrow arrow(0.01f, 1);
-Target target({0, 1.5, -2}, 1.5, 0.4);
+Target target({0, 2.5, -2}, 1.0f, 0.4f);
 
 size_t g_bow;
 float bow_handle_len = 0.4f;
@@ -390,7 +399,61 @@ void simulate_arrows() {
 }
 
 void display_help() {
-    draw_centered(ORTHO_SIZE / 2, "YOU ASKED FOR HELP");
+    const char *messages[] = {
+        "r : reset level",
+        "c : change game mode",
+        "m : toggle mouse",
+        "",
+        "q : quit"
+    };
+    int n_mess = sizeof(messages) / sizeof(messages[0]);
+
+    int y = ORTHO_SIZE / 2;
+    draw_centered(y, "- HELP -");
+    y -= 40;
+
+    for (size_t i = 0; i < n_mess; i++)
+        draw_centered(y - i * 40, messages[i]);
+}
+
+void display_hud() {
+    std::string score_str = "Score: " + std::to_string(player.score);
+    draw_text(20, 960, score_str.c_str());
+
+    std::string arrows_remaining = "Arrows: " + 
+        std::to_string(player.capacity - player.curr_arrow) + "/" +
+        std::to_string(player.capacity);
+    draw_text(20, 920, arrows_remaining.c_str());
+}
+
+void display_hints() {
+    draw_raligned(980, 960, "Press 'h' for help");
+}
+
+void idle() {
+    if (pulling) {
+        pull_last = pull_now;
+        pull_now = clock();
+
+        dt_pull = ((float) (pull_now - pull_last)) / CLOCKS_PER_SEC;
+        float amount = dt_pull * 10;
+        player.pull(quiver[player.curr_arrow], amount);
+    }
+
+    // white_light.position[0] = player.pos.x;
+    // white_light.position[1] = player.pos.y;
+    // white_light.position[2] = player.pos.z;
+    // white_light.position[3] = 20;
+    // set_light(white_light);
+
+    glPushMatrix();
+        for (size_t i = 0; i < num_lights; i++) {
+            set_light(lights[i]);
+        }
+    glPopMatrix();
+
+    g_angle += 3;
+    glutPostRedisplay();
 }
 
 int cnt = 0;
@@ -424,8 +487,8 @@ void display() {
         simulate_arrows();
 
         float rad = cnt * 180 / M_PI;
-        rad /= 10000;
-        vec3 motion = {cos(rad)/25, 0, 0};
+        rad /= 5000;
+        vec3 motion = {cos(rad)/15, 0, 0};
         target.move(motion);
         cnt++;
 
@@ -445,14 +508,9 @@ void display() {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
 
-    // display user score
-    std::string score_str = "Score: " + std::to_string(player.score);
-    draw_text(20, 960, score_str.c_str());
-
-    std::string arrows_remaining = "Arrows: " + 
-        std::to_string(player.capacity - player.curr_arrow) + "/" +
-        std::to_string(player.capacity);
-    draw_text(20, 920, arrows_remaining.c_str());
+    // display various messages
+    display_hud();
+    display_hints();
 
     if (want_help)
         display_help();
@@ -472,8 +530,13 @@ void display() {
 } 
 
 void reset() {
+
     player.score = 0;
     player.curr_arrow = 0;
+    player.pos = {0, 2, 10};
+    player.pitch = player.yaw = 0.0f;   // reset view
+
+    // store all arrows
     for (size_t i = 0; i < player.capacity; i++) {
         quiver[i].state = STASHED;
     }
@@ -548,10 +611,6 @@ void special(int k, int, int) {
     glutPostRedisplay();
 }
 
-clock_t pull_last, pull_now;
-bool pulling = false;
-float dt_pull;
-
 void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
@@ -577,32 +636,6 @@ void mouse_click(int button, int state, int x, int y) {
 
         break;
     }
-}
-
-void idle() {
-    if (pulling) {
-        pull_last = pull_now;
-        pull_now = clock();
-
-        dt_pull = ((float) (pull_now - pull_last)) / CLOCKS_PER_SEC;
-        float amount = dt_pull * 10;
-        player.pull(quiver[player.curr_arrow], amount);
-    }
-
-    // white_light.position[0] = player.pos.x;
-    // white_light.position[1] = player.pos.y;
-    // white_light.position[2] = player.pos.z;
-    // white_light.position[3] = 20;
-    // set_light(white_light);
-
-    glPushMatrix();
-        for (size_t i = 0; i < num_lights; i++) {
-            set_light(lights[i]);
-        }
-    glPopMatrix();
-
-    g_angle += 3;
-    glutPostRedisplay();
 }
 
 void mouse_motion(int x, int y) {
@@ -658,13 +691,16 @@ void reshape(int w, int h) {
     gluPerspective(75, 1, 0.4, 100);
 }
 
-int init() {
+int init(int argc, char *argv[]) {
+
+	if (argc > 2)
+		create_and_compile_shaders(argv[1], argv[2]);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
-    glShadeModel(GL_SMOOTH);
     glEnable(GL_MULTISAMPLE);
 
+    glShadeModel(GL_SMOOTH);
     glutSetCursor(GLUT_CURSOR_NONE);
 
     for (size_t i = 0; i < MAX_CAPACITY; i++) {
@@ -673,7 +709,6 @@ int init() {
     }
 
     bow.make_handle();
-    arrow.make_handle();
     target.make_handle();
     g_earth = make_earth();
 
@@ -699,6 +734,26 @@ int main(int argc, char *argv[]) {
 
     glutCreateWindow("Archery");
 
+#ifndef __APPLE__ 
+	GLenum err = glewInit();
+	if (GLEW_OK!=err)
+	{
+		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+		exit(1);
+	}
+
+	fprintf(stderr, "Using GLEW %s\n", glewGetString(GLEW_VERSION));
+
+
+	if (glewIsSupported("GL_VERSION_2_0"))
+		printf("Ready for OpenGL 2.0\n");
+	else 
+	{
+		printf("OpenGL 2.0 not supported\n");
+		exit(1);
+	}
+#endif
+
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special);
     glutMouseFunc(mouse_click);
@@ -707,140 +762,10 @@ int main(int argc, char *argv[]) {
     glutDisplayFunc(display);
     glutIdleFunc(idle);
 
-    init();
+	fprintf(stderr, "Open GL version %s\n", glGetString(GL_VERSION));
+    init(argc, argv);
 
     glutMainLoop();
 
     return 0;
 }
-
-/*
-char* read_shader_source(const char* filename) {
-	char* buffer = NULL;
-
-	FILE* fp = fopen(filename, "r");
-	if (fp!=NULL)
-	{
-		struct stat status_buf;
-		stat(filename, &status_buf); // find out how big it is
-
-		buffer = new char[status_buf.st_size+1];
-		// read in the file
-		fread(buffer, 1, status_buf.st_size, fp); 
-		buffer[status_buf.st_size] = '\0'; // null terminate it
-
-		fclose(fp);
-	}
-	else
-	{
-		fprintf(stderr, "Failed to open shader file %s for reading\n", filename);
-		exit(1);
-	}
-
-	return buffer;
-}
-
-void print_shader_info_log(unsigned int shader_obj)
-{
-	int len = 0;
-	glGetShaderiv(shader_obj, GL_INFO_LOG_LENGTH, &len);
-	if (len>1)
-	{
-		char* log = new char[len];
-		int s_len = 0;
-		glGetShaderInfoLog(shader_obj, len, &s_len, log);
-		fprintf(stderr, "%s", log);
-		delete[] log;
-	}
-}
-
-void print_program_info_log(unsigned int shader_obj)
-{
-	int len = 0;
-	glGetProgramiv(shader_obj, GL_INFO_LOG_LENGTH, &len);
-	if (len>1)
-	{
-		char* log = new char[len];
-		int s_len = 0;
-		glGetProgramInfoLog(shader_obj, len, &s_len, log);
-		fprintf(stderr, "%s", log);
-		delete[] log;
-	}
-}
-
-void create_and_compile_shaders(
-		const char* vertex_shader_filename,
-		const char* fragment_shader_filename
-	)
-{
-	fprintf(stderr, "create_and_compile shaders called: vertex shader = %s, fragment shader = %s\n",
-						vertex_shader_filename, fragment_shader_filename );
-	fprintf(stderr, "Shading Language version %s\n", 
-			glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-	// read the shader source files
-	char* vertex_source = read_shader_source(vertex_shader_filename);
-	char* frag_source = read_shader_source(fragment_shader_filename);
-
-	if (vertex_source && frag_source)
-	{
-		// create shader program object and shader objects
-		g_vertex_obj = glCreateShader(GL_VERTEX_SHADER);
-		g_fragment_obj = glCreateShader(GL_FRAGMENT_SHADER);
-
-
-		// put sources into shader objects
-		glShaderSource(g_vertex_obj, 1, (const char**)&vertex_source, NULL);
-		glShaderSource(g_fragment_obj, 1, (const char**)&frag_source, NULL);
-		
-		// attempt to compile and link
-		glCompileShader(g_vertex_obj);
-
-		// check if it has compile ok
-		int compiled = 0;
-		glGetShaderiv(g_vertex_obj, GL_COMPILE_STATUS, &compiled);
-		if (compiled==0)
-		{
-			// failed to compile vertex shader
-			fprintf(stderr, "Failed to compile vertex shader\n");
-			print_shader_info_log(g_vertex_obj);
-
-			exit(1);
-		}
-
-		glCompileShader(g_fragment_obj);
-		glGetShaderiv(g_fragment_obj, GL_COMPILE_STATUS, &compiled);
-		if (compiled==0)
-		{
-			// failed to compile fragment shader
-			fprintf(stderr, "Failed to compile fragment shader\n");
-			print_shader_info_log(g_fragment_obj);
-			exit(1);
-		}
-
-		// attach shaders to the program object
-		g_program_obj = glCreateProgram();
-		glAttachShader(g_program_obj, g_vertex_obj);
-		glAttachShader(g_program_obj, g_fragment_obj);
-
-		// try to link the program
-		glLinkProgram(g_program_obj);
-
-		int linked = 0;
-		glGetProgramiv(g_program_obj, GL_LINK_STATUS, &linked);
-		if (linked==0)
-		{
-			// failed to link program 
-			fprintf(stderr, "Failed to link shader program\n");
-			print_program_info_log(g_program_obj);
-			exit(1);
-		}
-
-		delete[] vertex_source;
-		delete[] frag_source;
-	}
-
-	if (glIsProgram(g_program_obj))
-		glUseProgram(g_program_obj);
-}
-*/

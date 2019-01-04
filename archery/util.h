@@ -60,6 +60,7 @@ struct vec3 {
 
 void draw_text(const int, const int, const char *);
 void draw_centered(const int, const char *);
+void draw_raligned(const int, const int, const char *);
 
 unsigned int load_and_bind_tex(const char *f);
 int png_load(const char *f, int *w, int *h, char **img);
@@ -72,5 +73,9 @@ vec3 cross(vec3, vec3);
 vec3 normalize(vec3);
 float dot(vec3, vec3);
 float dist(vec3, vec3);
+
+void print_shader_info_log(unsigned int shader_obj);
+void print_program_info_log(unsigned int shader_obj);
+void create_and_compile_shaders(const char *vs_fname, const char *fs_fname);
 
 #endif

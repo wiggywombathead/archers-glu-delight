@@ -1,7 +1,15 @@
 #include "util.h"
+
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
+#include <GL/glew.h>
 #include <GL/glut.h>
+#endif
+
 #include <png.h>
 #include <string.h>
+#include <sys/stat.h>
 
 std::ostream& operator<<(std::ostream &strm, const vec3& v) {
     return strm << "<" << v.x << ", " << v.y << "," << v.z << ">";
@@ -64,6 +72,10 @@ float dist(vec3 a, vec3 b) {
     );
 }
 
+unsigned int g_program_obj = 0;
+unsigned int g_vertex_obj = 0;
+unsigned int g_fragment_obj = 0;
+
 void draw_text(const int x, const int y, const char *str) {
 
 	const float scale = 0.25f;
@@ -96,8 +108,21 @@ void draw_centered(const int y, const char *str) {
     int width = 0;
     for (size_t i = 0; i < len; i++)
         width += glutStrokeWidth(GLUT_STROKE_ROMAN, str[i]);
+    width *= scale;
+    draw_text((ORTHO_SIZE - width)/2, y, str);
+}
 
-    draw_text(0.5 * (ORTHO_SIZE - width), y, str);
+void draw_raligned(const int x, const int y, const char *str) {
+    
+    const float scale = 0.25f;
+
+    size_t len = strlen(str);
+    int width = 0;
+    for (size_t i = 0; i < len; i++)
+        width += glutStrokeWidth(GLUT_STROKE_ROMAN, str[i]);
+    width *= scale;
+
+    draw_text(x - width, y, str);
 }
 
 unsigned int load_and_bind_tex(const char *fname) {
@@ -141,8 +166,7 @@ int png_load(const char* file_name,
     png_byte header[8];
 
     FILE* fp = fopen(file_name, "rb");
-    if (fp == 0)
-    {
+    if (fp == 0) {
         fprintf(stderr, "erro: could not open PNG file %s\n", file_name);
         perror(file_name);
         return 0;
@@ -151,16 +175,14 @@ int png_load(const char* file_name,
     // read the header
     fread(header, 1, 8, fp);
 
-    if (png_sig_cmp(header, 0, 8))
-    {
+    if (png_sig_cmp(header, 0, 8)) {
         fprintf(stderr, "error: %s is not a PNG.\n", file_name);
         fclose(fp);
         return 0;
     }
 
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png_ptr)
-    {
+    if (!png_ptr) {
         fprintf(stderr, "error: png_create_read_struct returned 0.\n");
         fclose(fp);
         return 0;
@@ -168,8 +190,7 @@ int png_load(const char* file_name,
 
     // create png info struct
     png_infop info_ptr = png_create_info_struct(png_ptr);
-    if (!info_ptr)
-    {
+    if (!info_ptr) {
         fprintf(stderr, "error: png_create_info_struct returned 0.\n");
         png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
         fclose(fp);
@@ -178,8 +199,7 @@ int png_load(const char* file_name,
 
     // create png info struct
     png_infop end_info = png_create_info_struct(png_ptr);
-    if (!end_info)
-    {
+    if (!end_info) {
         fprintf(stderr, "error: png_create_info_struct returned 0.\n");
         png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
         fclose(fp);
@@ -226,8 +246,7 @@ int png_load(const char* file_name,
     // Allocate the image_data as a big block, to be given to opengl
     png_byte* image_data;
     image_data = (png_byte*)malloc(rowbytes * temp_height * sizeof(png_byte)+15);
-    if (image_data == NULL)
-    {
+    if (image_data == NULL) {
         fprintf(stderr, "error: could not allocate memory for PNG image data\n");
         png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
         fclose(fp);
@@ -236,8 +255,7 @@ int png_load(const char* file_name,
 
     // row_pointers is for pointing to image_data for reading the png with libpng
     png_bytep* row_pointers = (png_bytep*)malloc(temp_height * sizeof(png_bytep));
-    if (row_pointers == NULL)
-    {
+    if (row_pointers == NULL) {
         fprintf(stderr, "error: could not allocate memory for PNG row pointers\n");
         png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
         free(image_data);
@@ -247,8 +265,7 @@ int png_load(const char* file_name,
 
     // set the individual row_pointers to point at the correct offsets of image_data
     int i;
-    for (i = 0; i < temp_height; i++)
-    {
+    for (i = 0; i < temp_height; i++) {
         row_pointers[temp_height - 1 - i] = image_data + i * rowbytes;
     }
 
@@ -269,3 +286,129 @@ int png_load(const char* file_name,
 	return 1;
 }
 
+char* read_shader_source(const char* filename) {
+	char* buffer = NULL;
+
+	FILE* fp = fopen(filename, "r");
+	if (fp!=NULL)
+	{
+		struct stat status_buf;
+		stat(filename, &status_buf); // find out how big it is
+
+		buffer = new char[status_buf.st_size+1];
+		// read in the file
+		fread(buffer, 1, status_buf.st_size, fp); 
+		buffer[status_buf.st_size] = '\0'; // null terminate it
+
+		fclose(fp);
+	}
+	else
+	{
+		fprintf(stderr, "Failed to open shader file %s for reading\n", filename);
+		exit(1);
+	}
+
+	return buffer;
+}
+
+void print_shader_info_log(unsigned int shader_obj) {
+	int len = 0;
+	glGetShaderiv(shader_obj, GL_INFO_LOG_LENGTH, &len);
+	if (len>1)
+	{
+		char* log = new char[len];
+		int s_len = 0;
+		glGetShaderInfoLog(shader_obj, len, &s_len, log);
+		fprintf(stderr, "%s", log);
+		delete[] log;
+	}
+}
+
+void print_program_info_log(unsigned int shader_obj) {
+	int len = 0;
+	glGetProgramiv(shader_obj, GL_INFO_LOG_LENGTH, &len);
+	if (len>1)
+	{
+		char* log = new char[len];
+		int s_len = 0;
+		glGetProgramInfoLog(shader_obj, len, &s_len, log);
+		fprintf(stderr, "%s", log);
+		delete[] log;
+	}
+}
+
+void create_and_compile_shaders(
+		const char* vertex_shader_filename,
+		const char* fragment_shader_filename
+	) {
+
+	fprintf(stderr, "create_and_compile shaders called: vertex shader = %s, fragment shader = %s\n",
+						vertex_shader_filename, fragment_shader_filename );
+	fprintf(stderr, "Shading Language version %s\n", 
+			glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	// read the shader source files
+	char* vertex_source = read_shader_source(vertex_shader_filename);
+	char* frag_source = read_shader_source(fragment_shader_filename);
+
+	if (vertex_source && frag_source)
+	{
+		// create shader program object and shader objects
+		g_vertex_obj = glCreateShader(GL_VERTEX_SHADER);
+		g_fragment_obj = glCreateShader(GL_FRAGMENT_SHADER);
+
+
+		// put sources into shader objects
+		glShaderSource(g_vertex_obj, 1, (const char**)&vertex_source, NULL);
+		glShaderSource(g_fragment_obj, 1, (const char**)&frag_source, NULL);
+		
+		// attempt to compile and link
+		glCompileShader(g_vertex_obj);
+
+		// check if it has compile ok
+		int compiled = 0;
+		glGetShaderiv(g_vertex_obj, GL_COMPILE_STATUS, &compiled);
+		if (compiled==0)
+		{
+			// failed to compile vertex shader
+			fprintf(stderr, "Failed to compile vertex shader\n");
+			print_shader_info_log(g_vertex_obj);
+
+			exit(1);
+		}
+
+		glCompileShader(g_fragment_obj);
+		glGetShaderiv(g_fragment_obj, GL_COMPILE_STATUS, &compiled);
+		if (compiled==0)
+		{
+			// failed to compile fragment shader
+			fprintf(stderr, "Failed to compile fragment shader\n");
+			print_shader_info_log(g_fragment_obj);
+			exit(1);
+		}
+
+		// attach shaders to the program object
+		g_program_obj = glCreateProgram();
+		glAttachShader(g_program_obj, g_vertex_obj);
+		glAttachShader(g_program_obj, g_fragment_obj);
+
+		// try to link the program
+		glLinkProgram(g_program_obj);
+
+		int linked = 0;
+		glGetProgramiv(g_program_obj, GL_LINK_STATUS, &linked);
+		if (linked==0)
+		{
+			// failed to link program 
+			fprintf(stderr, "Failed to link shader program\n");
+			print_program_info_log(g_program_obj);
+			exit(1);
+		}
+
+		delete[] vertex_source;
+		delete[] frag_source;
+	}
+
+	if (glIsProgram(g_program_obj))
+		glUseProgram(g_program_obj);
+}
