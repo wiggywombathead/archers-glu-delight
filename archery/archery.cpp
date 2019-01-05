@@ -16,8 +16,8 @@
 #include "arrow.h"
 #include "target.h"
 
-#define WIN_W 640
-#define WIN_H 640
+#define WIN_W 800
+#define WIN_H 800
 #define FRAME_RATE 60
 
 const int FRAME_INTERVAL = 1 * 1000 / FRAME_RATE;
@@ -38,6 +38,8 @@ clock_t pull_last, pull_now;
 bool pulling = false;
 float dt_pull;
 
+float g_distance = 5.0f;
+
 size_t g_earth;
 size_t g_axes;
 
@@ -57,9 +59,12 @@ enum ArrowParts {
 };
 
 enum Difficulty {
-    PRACTICE,
-    MOVING
-} difficulty;
+    STATIONARY,
+    MOVING,
+    MOVING_PLUS_PLUS,
+    NUM_DIFFICULTIES = 3
+};
+int g_difficulty;
 
 Player player({0, 2, 10});
 Arrow quiver[MAX_CAPACITY];
@@ -212,13 +217,13 @@ void draw_axes() {
     glEnable(GL_LIGHTING);
 }
 
-float g_angle = 0.0f;
+float g_light_angle;
 void draw_lights() {
     glDisable(GL_LIGHTING);
     glMatrixMode(GL_MODELVIEW);
 
     glPushMatrix();
-        glRotatef(g_angle, 0, 1, 0);
+        glRotatef(g_light_angle, 0, 1, 0);
         
         glPointSize(4);
         glBegin(GL_POINTS);
@@ -269,6 +274,22 @@ size_t make_earth() {
 
 void draw_earth() {
     glCallList(g_earth);
+}
+
+void draw_toeline() {
+    glDisable(GL_LIGHTING);
+    glMatrixMode(GL_MODELVIEW);
+
+    glPushMatrix();
+        glScalef(25, 1, 1);
+        glBegin(GL_LINES);
+            glColor3f(1, 0, 1);
+            glVertex3f(-1.0f, 0.0f, target.pos.z + g_distance);
+            glVertex3f(1.0f, 0.0f, target.pos.z + g_distance);
+        glEnd();
+    glPopMatrix();
+
+    glEnable(GL_LIGHTING);
 }
 
 size_t make_arrow() {
@@ -374,7 +395,7 @@ void simulate_arrows() {
 
         // avoid unnecessary simulation of arrow
         if (a->state == DEAD) {
-            a->draw_flight();
+            // a->draw_flight();
             continue;
         }
 
@@ -388,28 +409,52 @@ void simulate_arrows() {
                 a->state = STUCK;
             } else {
                 a->simulate();
-                a->draw_flight();
+                // a->draw_flight();
             }
         }
 
         if (a->state == STUCK) {
+            a->stick_in(target);
+            // a->draw_stuck_in(target);
+        }
+    }
+}
+
+void draw_arrows() {
+    for (size_t i = 0; i < player.curr_arrow; i++) {
+        Arrow *a = &quiver[i];
+
+        switch (a->state) {
+        case DEAD:
+        case FIRED:
+            a->draw_flight();
+            break;
+        case STUCK:
             a->draw_stuck_in(target);
+            break;
         }
     }
 }
 
 void display_help() {
     const char *messages[] = {
+        "Press RMB to nock arrow",
+        "Press and hold LMB to fire",
+        "",
+        "- HELP -",
         "r : reset level",
         "c : change game mode",
         "m : toggle mouse",
+        "",
+        "'<', '>' : change difficulty",
+        "'[', ']' : decrease/increase foul line"
         "",
         "q : quit"
     };
     int n_mess = sizeof(messages) / sizeof(messages[0]);
 
-    int y = ORTHO_SIZE / 2;
-    draw_centered(y, "- HELP -");
+    int y = (ORTHO_SIZE + (n_mess + 1) * 40) / 2;
+    draw_centered(y, "- CONTROLS -");
     y -= 40;
 
     for (size_t i = 0; i < n_mess; i++)
@@ -424,6 +469,9 @@ void display_hud() {
         std::to_string(player.capacity - player.curr_arrow) + "/" +
         std::to_string(player.capacity);
     draw_text(20, 920, arrows_remaining.c_str());
+
+    if (paused)
+        draw_centered(20, "[paused]");
 }
 
 void display_hints() {
@@ -431,6 +479,10 @@ void display_hints() {
 }
 
 void idle() {
+    
+    if (paused) 
+        return;
+
     if (pulling) {
         pull_last = pull_now;
         pull_now = clock();
@@ -452,11 +504,13 @@ void idle() {
         }
     glPopMatrix();
 
-    g_angle += 3;
+    g_light_angle += 3;
     glutPostRedisplay();
 }
 
-int cnt = 0;
+int g_count = 0;
+float g_target_rads = 0.0f;
+
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -473,6 +527,7 @@ void display() {
 
     glPushMatrix();
 
+
         // draw weapon
         bow.draw();
 
@@ -484,13 +539,34 @@ void display() {
         // translate everything to camera position/view
         player.see();
 
-        simulate_arrows();
+        if (!paused)
+            simulate_arrows();
+        draw_arrows();
 
-        float rad = cnt * 180 / M_PI;
-        rad /= 5000;
-        vec3 motion = {cos(rad)/15, 0, 0};
-        target.move(motion);
-        cnt++;
+        if (!paused) {
+
+            float target_dx, target_dy;
+            vec3 target_motion;
+
+            switch (g_difficulty) {
+            case STATIONARY:
+                break;
+            case MOVING:
+                g_target_rads = g_count * 180 / M_PI;
+                target_dx = cos(g_target_rads / 5000)/15;
+                target_motion = {target_dx, 0, 0};
+                break;
+            case MOVING_PLUS_PLUS:
+                g_target_rads = g_count * 180 / M_PI;
+                target_dx = cos(g_target_rads / 5000)/15;
+                target_dy = -sin(g_target_rads / 1500)/20;
+                target_motion = {target_dx, target_dy, 0};
+                break;
+            };
+
+            target.move(target_motion);
+            g_count++;
+        }
 
         // draw the target
         target.draw();
@@ -502,6 +578,8 @@ void display() {
         draw_axes();
 
         draw_lights();
+
+        draw_toeline();
 
     glPopMatrix();
 
@@ -536,6 +614,8 @@ void reset() {
     player.pos = {0, 2, 10};
     player.pitch = player.yaw = 0.0f;   // reset view
 
+    target.pos = {0, 2.5, -2};
+
     // store all arrows
     for (size_t i = 0; i < player.capacity; i++) {
         quiver[i].state = STASHED;
@@ -543,6 +623,8 @@ void reset() {
 }
 
 void keyboard(unsigned char k, int, int) {
+
+    float dx, dz;
 
     switch (k) {
     /* HELP, PAUSE, RESET, QUIT */
@@ -559,8 +641,13 @@ void keyboard(unsigned char k, int, int) {
         exit(1);
     /* PLAYER MOVEMENT */
     case 'w':
-        player.pos.x += 0.2 * sin(player.yaw * M_PI / 180);
-        player.pos.z -= 0.2 * cos(player.yaw * M_PI / 180);
+        dx = 0.2 * sin(player.yaw * M_PI / 180);
+        dz = 0.2 * cos(player.yaw * M_PI / 180);
+
+        player.pos.x += dx;
+
+        if (player.pos.z - target.pos.z >= g_distance)
+            player.pos.z -= dz;
         break;
     case 's':
         player.pos.x -= 0.2 * sin(player.yaw * M_PI / 180);
@@ -583,8 +670,16 @@ void keyboard(unsigned char k, int, int) {
             glutSetCursor(GLUT_CURSOR_NONE);
         break;
     case '[':
+        g_distance -= 0.5f;
         break;
     case ']':
+        g_distance += 0.5f;
+        break;
+    case '<':
+        g_difficulty = (g_difficulty - 1) % NUM_DIFFICULTIES;
+        break;
+    case '>':
+        g_difficulty = (g_difficulty + 1) % NUM_DIFFICULTIES;
         break;
     }
 
@@ -615,6 +710,7 @@ void mouse_click(int button, int state, int x, int y) {
 
     switch (button) {
     case GLUT_LEFT_BUTTON:
+        if (paused) break;
         if (state == GLUT_DOWN) {
             pulling = true;
             pull_now = clock();
@@ -730,7 +826,10 @@ int main(int argc, char *argv[]) {
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_MULTISAMPLE);
 
     glutInitWindowSize(WIN_W, WIN_H);
-    glutInitWindowPosition(100, 100);
+
+    int posx = (glutGet(GLUT_SCREEN_WIDTH) - WIN_W) / 2;
+    int posy = (glutGet(GLUT_SCREEN_HEIGHT) -  WIN_H) / 2;
+    glutInitWindowPosition(posx, posy);
 
     glutCreateWindow("Archery");
 

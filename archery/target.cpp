@@ -4,7 +4,7 @@
 #include <iostream>
 
 Target::Target() {
-    pos = {0, 0, 0};
+    pos = dpos = {0, 0, 0};
     radius = 2.0f;
     thickness = 0.2f;
     margin = 0.4 * thickness;
@@ -21,6 +21,8 @@ void Target::make_handle() {
 
     handle = glGenLists(1);
     texture = load_and_bind_tex("images/crate.png");
+    printf("Just loaded crate\n");
+    // texture = load_and_bind_tex("images/target.png");
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();

@@ -4,7 +4,7 @@
 - [ ] Adjustable difficulty
   - [x] Moving targets
   - [x] Limited arrows
-  - [ ] Time limit
+  - [ ] Time limit - get all targets
 - [ ] Lights
 - [x] Shaders
   - [ ] Now get them working better/nicer

@@ -11,6 +11,7 @@ public:
     float thickness;
     float margin;   // extra box added when calculating collision
     vec3 pos;
+    vec3 dpos;
 
     unsigned int segments = 5;
     int texture;

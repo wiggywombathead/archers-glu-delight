@@ -81,6 +81,19 @@ void Arrow::make_handle() {
     glEndList();
 }
 
+void Arrow::point() {
+    yaw = atan2(vel.y, vel.z) * 180.f / M_PI;
+    pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
+
+    if (vel.z < 0) {
+        yaw += 180;
+        pitch += 180;
+    }
+
+    glRotatef(-yaw, 1, 0, 0);
+    glRotatef(pitch, 0, 1, 0);
+}
+
 void Arrow::simulate() {
 
     if (vel.len() < 0.01f) {
@@ -122,19 +135,6 @@ void Arrow::draw_nocked() {
     glutPostRedisplay();
 }
 
-void Arrow::point() {
-    yaw = atan2(vel.y, vel.z) * 180.f / M_PI;
-    pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
-
-    if (vel.z < 0) {
-        yaw += 180;
-        pitch += 180;
-    }
-
-    glRotatef(-yaw, 1, 0, 0);
-    glRotatef(pitch, 0, 1, 0);
-}
-
 void Arrow::draw_flight() {
 
     glPushMatrix();
@@ -171,12 +171,15 @@ bool Arrow::has_hit(Target& t) {
     }
 }
 
-void Arrow::draw_stuck_in(Target& t) {
+void Arrow::stick_in(Target& t) {
     pos = {
         t.pos.x + offset.x,
         t.pos.y + offset.y,
         t.pos.z + offset.z
     };
+}
+
+void Arrow::draw_stuck_in(Target& t) {
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
         point();

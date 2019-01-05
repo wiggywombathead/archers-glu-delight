@@ -33,14 +33,14 @@ public:
     Arrow(float t, float l);
     void make_handle();
 
-    void simulate();
     void point();
+    void simulate();
     void draw_nocked();
     void draw_flight();
-
     bool has_hit(Target&);
-    int get_score(Target&);
+    void stick_in(Target&);
     void draw_stuck_in(Target&);
+    int get_score(Target&);
 };
 
 #endif
