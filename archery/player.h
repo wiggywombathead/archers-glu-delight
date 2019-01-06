@@ -15,8 +15,6 @@ public:
     float yaw;
     float roll;
 
-    Arrow quiver[MAX_CAPACITY];
-    Target target;
     int curr_arrow;
     unsigned int capacity;
     float power;
@@ -27,8 +25,8 @@ public:
     void see();
 
     void nock(Arrow&);
-    void fire(Arrow&);
-    void pull(Arrow&, float);
+    void pull(Bow&, Arrow&, float);
+    void fire(Bow&, Arrow&);
 };
 
 #endif

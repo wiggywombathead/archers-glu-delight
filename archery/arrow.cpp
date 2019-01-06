@@ -11,10 +11,17 @@ clock_t prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
 vec3 wind;
 
+enum ArrowParts {
+    SHAFT = 0,
+    HEAD = 1,
+    FLETCHING = 2,
+    ARR_PARTS = 3
+};
+
 Arrow::Arrow() {
     pos = {0, 0, 0};
     thickness = length = 0.0f;
-    pitch = yaw = 0.0f;
+    pitch = yaw = roll = 0.0f;
     state = STASHED;
 }
 
@@ -28,70 +35,104 @@ Arrow::Arrow(float t, float l) {
 }
 
 void Arrow::make_handle() {
-    handle = glGenLists(1);
+    handle = glGenLists(ARR_PARTS);
     // texture = load_and_bind_tex("images/arrow.png");
 
-    glNewList(handle, GL_COMPILE);
+    glNewList(handle + SHAFT, GL_COMPILE);
         glPushMatrix();
-        /*
-            glBindTexture(GL_TEXTURE_2D, texture);
-
-            glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-            glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-
-            glEnable(GL_TEXTURE_GEN_S);
-            glEnable(GL_TEXTURE_GEN_T);
-            glEnable(GL_TEXTURE_2D);
-
-            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-        */
-
-            // shaft
             draw_capped_cylinder(thickness, length);
+        glPopMatrix();
+    glEndList();
 
-            glDisable(GL_TEXTURE_GEN_S);
-            glDisable(GL_TEXTURE_GEN_T);
-            glDisable(GL_TEXTURE_2D);
+    glNewList(handle + HEAD, GL_COMPILE);
+        glPushMatrix();
+            glRotatef(180, 0, 1, 0);
+            draw_cone(thickness, 0.2);
+        glPopMatrix();
+    glEndList();
 
-            // head
-            glPushMatrix();
-                glRotatef(180, 0, 1, 0);
-                draw_cone(thickness, 0.2);
-            glPopMatrix();
-
-            // fletchings
-            glPushMatrix();
-                glTranslatef(0, 0, length);
-                glRotatef(90, 0, 0, 1);
-                glScalef(0.1, 0.01, 0.1);
-                glutSolidCube(1);
-            glPopMatrix();
-
+    glNewList(handle + FLETCHING, GL_COMPILE);
+        glPushMatrix();
             glPushMatrix();
                 glTranslatef(0, 0, length);
                 glScalef(0.1, 0.01, 0.1);
                 glutSolidCube(1);
             glPopMatrix();
 
+            glRotatef(90, 0, 0, 1);
+
             glPushMatrix();
+                glTranslatef(0, 0, length);
+                glScalef(0.1, 0.01, 0.1);
+                glutSolidCube(1);
             glPopMatrix();
         glPopMatrix();
     glEndList();
 }
 
+    // glNewList(handle, GL_COMPILE);
+    //     glPushMatrix();
+
+    //     /*
+    //         glBindTexture(GL_TEXTURE_2D, texture);
+
+    //         glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+    //         glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+    //         glEnable(GL_TEXTURE_GEN_S);
+    //         glEnable(GL_TEXTURE_GEN_T);
+    //         glEnable(GL_TEXTURE_2D);
+
+    //         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    //     */
+
+    //         // shaft
+    //         draw_capped_cylinder(thickness, length);
+
+    //         glDisable(GL_TEXTURE_GEN_S);
+    //         glDisable(GL_TEXTURE_GEN_T);
+    //         glDisable(GL_TEXTURE_2D);
+
+    //         // head
+    //         glPushMatrix();
+    //             glRotatef(180, 0, 1, 0);
+    //             draw_cone(thickness, 0.2);
+    //         glPopMatrix();
+
+    //         // fletchings
+    //         glPushMatrix();
+    //             glTranslatef(0, 0, length);
+    //             glRotatef(90, 0, 0, 1);
+    //             glScalef(0.1, 0.01, 0.1);
+    //             glutSolidCube(1);
+    //         glPopMatrix();
+
+    //         glPushMatrix();
+    //             glTranslatef(0, 0, length);
+    //             glScalef(0.1, 0.01, 0.1);
+    //             glutSolidCube(1);
+    //         glPopMatrix();
+
+    //         glPushMatrix();
+    //         glPopMatrix();
+    //     glPopMatrix();
+    // glEndList();
+
 void Arrow::point() {
-    yaw = atan2(vel.y, vel.z) * 180.f / M_PI;
-    pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
-
     if (vel.z < 0) {
-        yaw += 180;
-        pitch += 180;
+        yaw = atan2(vel.y, vel.z) * 180.f / M_PI;
+        pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
+        glRotatef(180 - yaw, 1, 0, 0);
+        glRotatef(180 + pitch, 0, 1, 0);
+    } else {
+        // TODO: get this right
+        yaw = atan2(vel.z, vel.y) * 180.f / M_PI;
+        pitch = atan2(vel.x, vel.z) * 180.f / M_PI;
+        glRotatef(180 + yaw, 1, 0, 0);
+        glRotatef(180 + pitch, 0, 1, 0);
     }
-
-    glRotatef(-yaw, 1, 0, 0);
-    glRotatef(pitch, 0, 1, 0);
 }
 
 void Arrow::simulate() {
@@ -123,14 +164,18 @@ void Arrow::simulate() {
         vel.z *= 0.5;
     }
 
+    roll += 30;
+
     // glutPostRedisplay();
 }
 
 void Arrow::draw_nocked() {
     glPushMatrix();
-        glTranslatef(0.4, -0.2, -1.2 + pulled);
+        glTranslatef(0.4, -0.2, -1.8 + pulled);
         glRotatef(15, 0, 1, 0);
-        glCallList(handle);
+        glCallList(handle + SHAFT);
+        glCallList(handle + HEAD);
+        glCallList(handle + FLETCHING);
     glPopMatrix();
     glutPostRedisplay();
 }
@@ -140,7 +185,10 @@ void Arrow::draw_flight() {
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
         point();
-        glCallList(handle);
+        glRotatef(roll, 0, 0, 1);
+        glCallList(handle + SHAFT);
+        glCallList(handle + HEAD);
+        glCallList(handle + FLETCHING);
     glPopMatrix();
 
     glutPostRedisplay();
@@ -183,7 +231,10 @@ void Arrow::draw_stuck_in(Target& t) {
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
         point();
-        glCallList(handle);
+        glRotatef(roll, 0, 0, 1);
+        glCallList(handle + SHAFT);
+        glCallList(handle + HEAD);
+        glCallList(handle + FLETCHING);
     glPopMatrix();
 
     glutPostRedisplay();

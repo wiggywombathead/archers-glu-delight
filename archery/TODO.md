@@ -5,7 +5,8 @@
   - [x] Moving targets
   - [x] Limited arrows
   - [ ] Time limit - get all targets
-- [ ] Lights
+- [x] Lights
+  - [ ] Better
 - [x] Shaders
   - [ ] Now get them working better/nicer
 - [ ] Smoother bow (adjustable with # segments)

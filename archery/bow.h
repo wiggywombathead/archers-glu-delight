@@ -8,11 +8,13 @@ public:
     size_t handle;
     float thickness;
     float length;
+    float bent;
 
     int texture;
 
     Bow(float t, float l);
     void make_handle();
+    void bend(float);
     void draw();
 }; 
 

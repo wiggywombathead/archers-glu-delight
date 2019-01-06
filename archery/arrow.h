@@ -24,8 +24,8 @@ public:
     vec3 offset;        // offset from target centre
     vec3 vel;
 
-    float pitch, yaw;   // arrow orientation
-    float pulled;       // percentage pulled
+    float pitch, yaw, roll;     // arrow orientation
+    float pulled;               // percentage pulled
 
     int texture;
 

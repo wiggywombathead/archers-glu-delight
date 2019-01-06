@@ -38,25 +38,12 @@ clock_t pull_last, pull_now;
 bool pulling = false;
 float dt_pull;
 
-float g_distance = 5.0f;
+float g_distance = 1.0f;
 
 size_t g_earth;
 size_t g_axes;
 
-enum {
-    HANDLE = 0,
-    LIMB = 1,
-    TIP = 2,
-    STRING = 3,
-    BOW_PARTS = 4
-};
-
-enum ArrowParts {
-    SHAFT = 0,
-    HEAD = 1,
-    FLETCHING = 2,
-    ARR_PARTS = 3
-};
+size_t g_skybox;
 
 enum Difficulty {
     STATIONARY,
@@ -68,19 +55,8 @@ int g_difficulty;
 
 Player player({0, 2, 10});
 Arrow quiver[MAX_CAPACITY];
-
-Bow bow(0.02f, 0.8f);
+Bow bow(0.02f, 0.6f);
 Target target({0, 2.5, -2}, 1.0f, 0.4f);
-
-size_t g_bow;
-float bow_handle_len = 0.4f;
-float bow_limb_len = 0.2f;
-float bow_tip_len = 0.1f;
-float bow_curve = 15.0f;
-float bow_str_len;
-
-size_t g_arrow;
-float arrow_len;
 
 struct light_t {
     size_t name;
@@ -154,7 +130,7 @@ light_t lights[] = {
    red_light, green_light, blue_light
 };
 unsigned int curr_light;
-int num_lights = 3;
+int num_lights = 0;
 
 void set_material(const material_t &mat) {
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat.ambient);
@@ -224,14 +200,14 @@ void draw_lights() {
 
     glPushMatrix();
         glRotatef(g_light_angle, 0, 1, 0);
-        
         glPointSize(4);
-        glBegin(GL_POINTS);
-            for (size_t i = 0; i < num_lights; i++) {
+
+        for (size_t i = 0; i < 3; i++) {
+            glBegin(GL_POINTS);
                 glColor3fv(lights[i].diffuse);
                 glVertex4fv(lights[i].position);
-            }
-        glEnd();
+            glEnd();
+        }
     glPopMatrix();
 
     glEnable(GL_LIGHTING);
@@ -292,102 +268,6 @@ void draw_toeline() {
     glEnable(GL_LIGHTING);
 }
 
-size_t make_arrow() {
-
-    size_t handle = glGenLists(ARR_PARTS);
-
-    glNewList(handle + SHAFT, GL_COMPILE);
-        glPushMatrix();
-            draw_capped_cylinder(0.008, arrow_len);
-        glPopMatrix();
-    glEndList();
-
-    return handle;
-}
-
-size_t make_bow() {
-
-    size_t handle = glGenLists(BOW_PARTS);
-
-    glNewList(handle + HANDLE, GL_COMPILE);
-        glPushMatrix();
-            glRotatef(-90, 1, 0, 0);
-            draw_capped_cylinder(0.01, bow_handle_len);
-        glPopMatrix();
-    glEndList();
-
-    glNewList(handle + LIMB, GL_COMPILE);
-        glPushMatrix();
-            glRotatef(-90, 1, 0, 0);
-            draw_capped_cylinder(0.01, bow_limb_len);
-        glPopMatrix();
-    glEndList();
-
-    glNewList(handle + TIP, GL_COMPILE);
-        glPushMatrix();
-            glRotatef(-90, 1, 0, 0);
-            draw_capped_cylinder(0.01, bow_tip_len);
-        glPopMatrix();
-    glEndList();
-
-    glNewList(handle + STRING, GL_COMPILE);
-        glPushMatrix();
-            glRotatef(-90, 1, 0, 0);
-            draw_capped_cylinder(0.005, bow_str_len);
-        glPopMatrix();
-    glEndList();
-
-    return handle;
-}
-
-void draw_weapon() {
-
-    float down = -(bow_limb_len * cos(bow_curve * M_PI / 180) + bow_tip_len * cos(2 * bow_curve * M_PI / 180));
-    float back = -(bow_limb_len * sin(bow_curve * M_PI / 180) + bow_tip_len * sin(2 * bow_curve * M_PI / 180));
-
-    glPushMatrix();
-
-        /*
-        glCallList(g_bow + HANDLE);
-
-        // draw top half of bow
-        glPushMatrix();
-            glTranslatef(0, bow_handle_len, 0);
-            glRotatef(bow_curve, 1, 0, 0);
-            glCallList(g_bow + LIMB);
-
-            glPushMatrix();
-                glTranslatef(0, bow_limb_len, 0);
-                glRotatef(bow_curve, 1, 0, 0);
-                glCallList(g_bow + TIP);
-            glPopMatrix();
-        glPopMatrix();
-
-        glRotatef(180, 1, 0, 0);
-
-        // draw bottom half of bow
-        glPushMatrix();
-            glTranslatef(0, 0, 0);
-            glRotatef(-bow_curve, 1, 0, 0);
-            glCallList(g_bow + LIMB);
-
-            glPushMatrix();
-                glTranslatef(0, bow_limb_len, 0);
-                glRotatef(-bow_curve, 1, 0, 0);
-                glCallList(g_bow + TIP);
-            glPopMatrix();
-        glPopMatrix();
-
-        // draw bow string
-        glPushMatrix();
-            glTranslatef(0, -bow_str_len - down, back);
-            glCallList(g_bow + STRING);
-        glPopMatrix();
-        */
-
-    glPopMatrix();
-}
-
 void simulate_arrows() {
     for (size_t i = 0; i < player.curr_arrow; i++) {
 
@@ -395,7 +275,6 @@ void simulate_arrows() {
 
         // avoid unnecessary simulation of arrow
         if (a->state == DEAD) {
-            // a->draw_flight();
             continue;
         }
 
@@ -409,14 +288,11 @@ void simulate_arrows() {
                 a->state = STUCK;
             } else {
                 a->simulate();
-                // a->draw_flight();
             }
         }
 
-        if (a->state == STUCK) {
+        if (a->state == STUCK)
             a->stick_in(target);
-            // a->draw_stuck_in(target);
-        }
     }
 }
 
@@ -446,8 +322,8 @@ void display_help() {
         "c : change game mode",
         "m : toggle mouse",
         "",
-        "'<', '>' : change difficulty",
-        "'[', ']' : decrease/increase foul line"
+        "< , > : change difficulty",
+        "[ , ] : decrease/increase foul line"
         "",
         "q : quit"
     };
@@ -480,23 +356,23 @@ void display_hints() {
 
 void idle() {
     
-    if (paused) 
-        return;
-
     if (pulling) {
         pull_last = pull_now;
         pull_now = clock();
 
         dt_pull = ((float) (pull_now - pull_last)) / CLOCKS_PER_SEC;
         float amount = dt_pull * 10;
-        player.pull(quiver[player.curr_arrow], amount);
+
+        player.pull(bow, quiver[player.curr_arrow], amount);
     }
 
-    // white_light.position[0] = player.pos.x;
-    // white_light.position[1] = player.pos.y;
-    // white_light.position[2] = player.pos.z;
-    // white_light.position[3] = 20;
-    // set_light(white_light);
+    white_light.position[0] = player.pos.x;
+    white_light.position[1] = player.pos.y;
+    white_light.position[2] = player.pos.z;
+    white_light.position[3] = 20;
+    set_light(white_light);
+    
+    draw_lights();
 
     glPushMatrix();
         for (size_t i = 0; i < num_lights; i++) {
@@ -506,6 +382,39 @@ void idle() {
 
     g_light_angle += 3;
     glutPostRedisplay();
+}
+
+void draw_skybox() {
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+
+    gluOrtho2D(0, WIN_W, 0, WIN_H);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_skybox);
+
+    glPushMatrix();
+        glBegin(GL_QUADS);
+            // lower left
+            glTexCoord2f(0, 0);
+            glVertex2i(0, 0);
+
+            // lower right
+            glTexCoord2f (1.0f, 0.0f);
+            glVertex2i(WIN_W, 0);
+
+            // upper right
+            glTexCoord2f (1.0f, 1.0f);
+            glVertex2i(WIN_W, WIN_H);
+
+            // upper left
+            glTexCoord2f (0.0f, 1.0f);
+            glVertex2i(0, WIN_H);
+        glEnd();
+    glPopMatrix();
+
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_LIGHTING);
 }
 
 int g_count = 0;
@@ -519,14 +428,13 @@ void display() {
     glLoadIdentity();
     gluPerspective(75, 1, 0.4, 100);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
 
-    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
+    glPushMatrix();
 
         // draw weapon
         bow.draw();
@@ -574,10 +482,10 @@ void display() {
         // draw the ground
         draw_earth();
 
+        draw_lights();
+
         // draw axes
         draw_axes();
-
-        draw_lights();
 
         draw_toeline();
 
@@ -586,16 +494,16 @@ void display() {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
 
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, WIN_W, 0, WIN_H);
+
     // display various messages
     display_hud();
     display_hints();
 
     if (want_help)
         display_help();
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, WIN_W, 0, WIN_H);
 
     // draw crosshair
     glPointSize(2.0f);
@@ -633,6 +541,10 @@ void keyboard(unsigned char k, int, int) {
         break;
     case 'p':
         paused = !paused;
+        if (paused)
+            glutIdleFunc(NULL);
+        else
+            glutIdleFunc(idle);
         break;
     case 'r':
         reset();
@@ -721,7 +633,7 @@ void mouse_click(int button, int state, int x, int y) {
 
         if (state == GLUT_UP) {
             pulling = false;
-            player.fire(quiver[player.curr_arrow]);
+            player.fire(bow, quiver[player.curr_arrow]);
         }
 
         break;
@@ -799,6 +711,11 @@ int init(int argc, char *argv[]) {
     glShadeModel(GL_SMOOTH);
     glutSetCursor(GLUT_CURSOR_NONE);
 
+    for (size_t i = 0; i < num_lights; i++)
+        set_light(lights[i]);
+
+    // g_skybox = load_and_bind_tex("images/clouds.png");
+
     for (size_t i = 0; i < MAX_CAPACITY; i++) {
         quiver[i] = Arrow(0.01f, 1.0f);
         quiver[i].make_handle();
@@ -807,15 +724,7 @@ int init(int argc, char *argv[]) {
     bow.make_handle();
     target.make_handle();
     g_earth = make_earth();
-
-    bow_str_len = 2 * (
-            bow_handle_len / 2 + 
-            bow_limb_len * cos(bow_curve * M_PI / 180) + 
-            bow_tip_len * cos(2 * bow_curve * M_PI / 180)
-    );
-
     g_axes = make_axes();
-    g_bow = make_bow();
 
     return 0;
 }
