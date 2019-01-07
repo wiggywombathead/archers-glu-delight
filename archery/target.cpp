@@ -8,6 +8,7 @@ Target::Target() {
     radius = 2.0f;
     thickness = 0.2f;
     margin = 0.4 * thickness;
+    segments = 5;
 }
 
 Target::Target(vec3 p, float r, float t) {
@@ -15,13 +16,13 @@ Target::Target(vec3 p, float r, float t) {
     radius = r;
     thickness = t;
     margin = 0.4 * thickness;
+    segments = 5;
 }
 
 void Target::make_handle() {
 
     handle = glGenLists(1);
     texture = load_and_bind_tex("images/crate.png");
-    printf("Just loaded crate\n");
     // texture = load_and_bind_tex("images/target.png");
 
     glNewList(handle, GL_COMPILE);

@@ -70,3 +70,11 @@ void Player::fire(Bow& b, Arrow &a) {
 
     curr_arrow++;
 }
+
+bool Player::out_of_arrows() {
+    return curr_arrow == capacity;
+}
+
+int Player::get_score() {
+    return score;
+}

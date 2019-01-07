@@ -13,7 +13,7 @@ public:
     vec3 pos;
     vec3 dpos;
 
-    unsigned int segments = 5;
+    unsigned int segments;
     int texture;
 
     Target();

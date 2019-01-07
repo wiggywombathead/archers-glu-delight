@@ -145,7 +145,8 @@ void Arrow::simulate() {
     prev_tick = curr_tick;
     curr_tick = clock();
 
-    float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
+    // float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
+    float dt = glutGet(GLUT_ELAPSED_TIME) / 1000;
 
     /* HACK - check if we dip below 30fps and assume we are paused */
     if (dt > 0.03)

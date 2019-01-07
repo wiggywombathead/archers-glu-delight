@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
+#include <ctime>
 
 #include <GL/glew.h>
 
@@ -19,6 +20,8 @@
 #define WIN_W 800
 #define WIN_H 800
 #define FRAME_RATE 60
+
+#define MAX_TARGETS 8
 
 const int FRAME_INTERVAL = 1 * 1000 / FRAME_RATE;
 
@@ -54,8 +57,9 @@ enum Difficulty {
 int g_difficulty;
 
 Player player({0, 2, 10});
-Arrow quiver[MAX_CAPACITY];
 Bow bow(0.02f, 0.6f);
+Arrow quiver[MAX_CAPACITY];
+Target targets[MAX_TARGETS];
 Target target({0, 2.5, -2}, 1.0f, 0.4f);
 
 struct light_t {
@@ -215,11 +219,10 @@ void draw_lights() {
 
 size_t make_earth() {
     size_t handle = glGenLists(1);
-    // int tex = load_and_bind_tex("images/grass.png");
+    int tex = load_and_bind_tex("images/green.png");
 
     glNewList(handle, GL_COMPILE);
         glPushMatrix();
-        /*
             glBindTexture(GL_TEXTURE_2D, tex);
 
             glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -232,11 +235,10 @@ size_t make_earth() {
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-        */
 
-            glTranslatef(0, -0.5, 0);
-            glScalef(50, 1, 50);
-            glRotatef(90, 1, 0, 0);
+            glRotatef(90, 0, 0, 1);
+            glScalef(0.5, 50, 50);
+            glTranslatef(-0.5, 0, 0);
             glutSolidCube(1);
 
             glDisable(GL_TEXTURE_2D);
@@ -359,9 +361,9 @@ void idle() {
     if (pulling) {
         pull_last = pull_now;
         pull_now = clock();
-
-        dt_pull = ((float) (pull_now - pull_last)) / CLOCKS_PER_SEC;
-        float amount = dt_pull * 10;
+        
+        int millis = glutGet(GLUT_ELAPSED_TIME);
+        float amount = millis / 100000.f;
 
         player.pull(bow, quiver[player.curr_arrow], amount);
     }
@@ -463,17 +465,18 @@ void display() {
                 g_target_rads = g_count * 180 / M_PI;
                 target_dx = cos(g_target_rads / 5000)/15;
                 target_motion = {target_dx, 0, 0};
+                g_count++;
                 break;
             case MOVING_PLUS_PLUS:
                 g_target_rads = g_count * 180 / M_PI;
                 target_dx = cos(g_target_rads / 5000)/15;
                 target_dy = -sin(g_target_rads / 1500)/20;
                 target_motion = {target_dx, target_dy, 0};
+                g_count++;
                 break;
             };
 
             target.move(target_motion);
-            g_count++;
         }
 
         // draw the target
@@ -512,6 +515,12 @@ void display() {
         glVertex2f(WIN_W / 2, WIN_H / 2);
     glEnd();
 
+    if (player.out_of_arrows()) {
+        std::string msg = "You scored " + std::to_string(player.get_score()) + " points!";
+        draw_centered(120, msg.c_str());
+        draw_centered(80, "Press r to restart");
+    }
+
     glutSwapBuffers();
 } 
 
@@ -523,6 +532,7 @@ void reset() {
     player.pitch = player.yaw = 0.0f;   // reset view
 
     target.pos = {0, 2.5, -2};
+    g_count = 0;    // for centred movement when reset
 
     // store all arrows
     for (size_t i = 0; i < player.capacity; i++) {
@@ -765,6 +775,7 @@ int main(int argc, char *argv[]) {
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(special);
     glutMouseFunc(mouse_click);
+    glutMotionFunc(mouse_motion);
     glutPassiveMotionFunc(mouse_motion);
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
