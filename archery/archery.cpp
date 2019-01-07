@@ -21,7 +21,7 @@
 #define WIN_H 800
 #define FRAME_RATE 60
 
-#define MAX_TARGETS 8
+#define MAX_TARGETS 16
 
 const int FRAME_INTERVAL = 1 * 1000 / FRAME_RATE;
 
@@ -41,7 +41,8 @@ clock_t pull_last, pull_now;
 bool pulling = false;
 float dt_pull;
 
-float g_distance = 1.0f;
+float g_distance = 15.0f;
+int num_targets = 3;
 
 size_t g_earth;
 size_t g_axes;
@@ -56,7 +57,7 @@ enum Difficulty {
 };
 int g_difficulty;
 
-Player player({0, 2, 10});
+Player player({0, 2, 0});
 Bow bow(0.02f, 0.6f);
 Arrow quiver[MAX_CAPACITY];
 Target targets[MAX_TARGETS];
@@ -275,26 +276,32 @@ void simulate_arrows() {
 
         Arrow *a = &quiver[i];
 
-        // avoid unnecessary simulation of arrow
-        if (a->state == DEAD) {
-            continue;
-        }
+        for (size_t j = 0; j < num_targets; j++) {
 
-        if (a->state == FIRED) {
+            Target current = targets[j];
 
-            // detect first collision
-            if (a->has_hit(target)) {
-                int score = a->get_score(target);
-                printf("Hit! (%d)\n", score);
-                player.score += score;
-                a->state = STUCK;
-            } else {
-                a->simulate();
+            // avoid unnecessary simulation of arrow
+            if (a->state == DEAD) {
+                continue;
             }
-        }
 
-        if (a->state == STUCK)
-            a->stick_in(target);
+            if (a->state == FIRED) {
+
+                // detect first collision
+                if (a->has_hit(current)) {
+                    int score = a->get_score(current);
+                    printf("Hit! (%d)\n", score);
+                    player.score += score;
+                    a->state = STUCK;
+                } else {
+                    a->simulate();
+                }
+            }
+
+            if (a->state == STUCK)
+                a->stick_in(current);
+
+        }
     }
 }
 
@@ -312,6 +319,11 @@ void draw_arrows() {
             break;
         }
     }
+}
+
+void draw_targets() {
+    for (size_t i = 0; i < num_targets; i++)
+        targets[i].draw();
 }
 
 void display_help() {
@@ -362,6 +374,7 @@ void idle() {
         pull_last = pull_now;
         pull_now = clock();
         
+        // don't ask why this gets shorter the more you fire ...
         int millis = glutGet(GLUT_ELAPSED_TIME);
         float amount = millis / 100000.f;
 
@@ -480,7 +493,8 @@ void display() {
         }
 
         // draw the target
-        target.draw();
+        // target.draw();
+        draw_targets();
 
         // draw the ground
         draw_earth();
@@ -528,7 +542,7 @@ void reset() {
 
     player.score = 0;
     player.curr_arrow = 0;
-    player.pos = {0, 2, 10};
+    player.pos = {0, 2, target.pos.z + g_distance};
     player.pitch = player.yaw = 0.0f;   // reset view
 
     target.pos = {0, 2.5, -2};
@@ -724,11 +738,26 @@ int init(int argc, char *argv[]) {
     for (size_t i = 0; i < num_lights; i++)
         set_light(lights[i]);
 
+    player.pos = {0, 2, target.pos.z + g_distance};
+
     // g_skybox = load_and_bind_tex("images/clouds.png");
 
+    // initialise quiver
     for (size_t i = 0; i < MAX_CAPACITY; i++) {
         quiver[i] = Arrow(0.01f, 1.0f);
         quiver[i].make_handle();
+    }
+
+    srand(time(NULL));
+    float x, y, z;
+
+    // initialise targets
+    for (size_t i = 0; i < MAX_TARGETS; i++) {
+        x = rand() % 50 - 25;   // -25 <= x <= 25
+        y = rand() % 9 + 1;     // 1 <= y <= 10
+        z = rand() % 25 - 25;   // -25 <= z <= 0
+        targets[i] = Target({x, y, z}, 1.0f, 0.4f);
+        targets[i].make_handle();
     }
 
     bow.make_handle();
@@ -754,8 +783,7 @@ int main(int argc, char *argv[]) {
 
 #ifndef __APPLE__ 
 	GLenum err = glewInit();
-	if (GLEW_OK!=err)
-	{
+	if (GLEW_OK!=err) {
 		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
 		exit(1);
 	}
@@ -763,10 +791,9 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
 
-	if (glewIsSupported("GL_VERSION_2_0"))
+	if (glewIsSupported("GL_VERSION_2_0")) {
 		printf("Ready for OpenGL 2.0\n");
-	else 
-	{
+    } else {
 		printf("OpenGL 2.0 not supported\n");
 		exit(1);
 	}

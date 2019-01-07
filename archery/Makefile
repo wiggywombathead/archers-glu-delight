@@ -1,4 +1,4 @@
-GLEW = /modules/cs324/glew-1.11.0
+GLEW =#/modules/cs324/glew-1.11.0
 
 INCDIRS = -I$(GLEW)/include
 LIBDIRS = -L/usr/X11R6/lib -L$(GLEW)/lib

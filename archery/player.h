@@ -20,6 +20,7 @@ public:
     float power;
     int score;
 
+    Player();
     Player(vec3);
     void init();
 
