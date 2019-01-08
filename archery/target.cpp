@@ -9,6 +9,7 @@ Target::Target() {
     thickness = 0.2f;
     margin = 0.4 * thickness;
     segments = 5;
+    hit = false;
 }
 
 Target::Target(vec3 p, float r, float t) {
@@ -17,6 +18,7 @@ Target::Target(vec3 p, float r, float t) {
     thickness = t;
     margin = 0.4 * thickness;
     segments = 5;
+    hit = false;
 }
 
 void Target::make_handle() {

@@ -50,10 +50,10 @@ size_t g_axes;
 size_t g_skybox;
 
 enum Difficulty {
-    STATIONARY,
+    STATIONARY = 0,
     MOVING,
     MOVING_PLUS_PLUS,
-    NUM_DIFFICULTIES = 3
+    NUM_DIFFICULTIES
 };
 int g_difficulty;
 
@@ -374,7 +374,7 @@ void display_hud() {
 }
 
 void display_hints() {
-    char *msgs[] = {
+    const char *msgs[] = {
         "Press 'h' for help",
         "<, > change motion of target(s)",
         "+, - change number of targets"

@@ -1,4 +1,5 @@
 # TODO
+- [ ] Gravity doesn't kick in until a few seconds into the game - why???
 - [ ] Wind
 - [ ] Adjustable difficulty
   - [x] Moving targets

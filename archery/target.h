@@ -12,6 +12,7 @@ public:
     float margin;   // extra box added when calculating collision
     vec3 pos;
     vec3 dpos;
+    bool hit;
 
     unsigned int segments;
     int texture;
