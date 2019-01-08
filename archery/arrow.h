@@ -26,7 +26,7 @@ public:
 
     float pitch, yaw, roll;     // arrow orientation
     float pulled;               // percentage pulled
-    Target stuck_in;  // the target this arrow is in
+    Target *stuck_in;  // the target this arrow is in
 
     int texture;
 
@@ -38,9 +38,9 @@ public:
     void simulate();
     void draw_nocked();
     void draw_flight();
-    bool has_hit(Target&);
-    void stick_in(Target&);
-    void draw_stuck_in();
+    bool colliding_with(Target&);
+    void stick_in();
+    void draw_stuck();
     int get_score(Target&);
 };
 

@@ -14,6 +14,7 @@ public:
     float pitch;
     float yaw;
     float roll;
+    float sensitivity;
 
     int curr_arrow;
     unsigned int capacity;

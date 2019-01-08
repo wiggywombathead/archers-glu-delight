@@ -11,6 +11,7 @@ Player::Player(vec3 p) {
 
     capacity = MAX_CAPACITY;
     curr_arrow = 0;
+    sensitivity = 1.0f;
 }
 
 void Player::see() {
@@ -45,7 +46,7 @@ void Player::pull(Bow& b, Arrow &a, float amnt) {
     power += amnt;
     power = (power > 1.5f) ? 1.5f : power;
     a.pulled = power / 1.5f;    // max arrow recess is 1.5
-    b.bent = power * 20;      // max bend is 1.5 * 20 = 30 degrees
+    b.bent = power * 20;        // max bend is 1.5 * 20 = 30 degrees
 }
 
 void Player::fire(Bow& b, Arrow &a) {

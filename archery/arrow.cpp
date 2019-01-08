@@ -195,7 +195,8 @@ void Arrow::draw_flight() {
     glutPostRedisplay();
 }
 
-bool Arrow::has_hit(Target& t) {
+/* use simple axis aligned bounding box to detect collisions */
+bool Arrow::colliding_with(Target& t) {
     vec3 tail = normalize(vel * -1) * length;
     if (
         ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
@@ -206,16 +207,13 @@ bool Arrow::has_hit(Target& t) {
         (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
         (tail.z <= t.pos.z + t.thickness + 2*t.margin) && (tail.z >= t.pos.z - 8*t.margin))
     ) {
-        if (state == FIRED) {
             offset = {
                 pos.x - t.pos.x,
                 pos.y - t.pos.y,
                 pos.z - t.pos.z
             };
             state = STUCK;
-            stuck_in = t;
-            t.hit = true;
-        }
+            stuck_in = &t;
 
         return true;
     } else {
@@ -223,15 +221,15 @@ bool Arrow::has_hit(Target& t) {
     }
 }
 
-void Arrow::stick_in(Target& t) {
+void Arrow::stick_in() {
     pos = {
-        t.pos.x + offset.x,
-        t.pos.y + offset.y,
-        t.pos.z + offset.z
+        stuck_in->pos.x + offset.x,
+        stuck_in->pos.y + offset.y,
+        stuck_in->pos.z + offset.z
     };
 }
 
-void Arrow::draw_stuck_in() {
+void Arrow::draw_stuck() {
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
         point();

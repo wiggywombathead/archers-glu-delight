@@ -55,7 +55,6 @@ void Target::make_handle() {
 
 void Target::draw() {
     glPushMatrix();
-        // glRotatef(180, 0, 1, 0);
         glTranslatef(pos.x, pos.y, pos.z);
         glCallList(handle);
     glPopMatrix();
@@ -63,5 +62,4 @@ void Target::draw() {
 
 void Target::move(vec3 d) {
     pos += d;
-    glutPostRedisplay();
 }

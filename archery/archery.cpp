@@ -44,6 +44,10 @@ float dt_pull;
 float g_distance = 15.0f;
 int num_targets = 1;
 
+// to vary target positions
+int g_count = 0;
+float g_target_rads = 0.0f;
+
 size_t g_earth;
 size_t g_axes;
 
@@ -271,6 +275,13 @@ void draw_toeline() {
     glEnable(GL_LIGHTING);
 }
 
+bool all_hit() {
+    for (size_t i = 0; i < num_targets; i++)
+        if (!targets[i].hit)
+            return false;
+    return true;
+}
+
 void simulate_arrows() {
     for (size_t i = 0; i < player.curr_arrow; i++) {
 
@@ -283,7 +294,7 @@ void simulate_arrows() {
         // update arrow's position based on the target it is in
         //   useful when targets can move
         if (a->state == STUCK) {
-            a->stick_in(a->stuck_in);
+            a->stick_in();
             continue;
         }
 
@@ -292,15 +303,14 @@ void simulate_arrows() {
 
         for (size_t j = 0; j < num_targets; j++) {
 
-            Target current = targets[j];
-
             if (a->state == FIRED) {
 
                 // detect first collision
-                if (a->has_hit(current)) {
-                    int score = a->get_score(current);
-                    printf("Hit! (%d)\n", score);
+                if (a->colliding_with(targets[j])) {
+                    int score = a->get_score(targets[j]);
+                    printf("Hit target %d! (%d)\n", score, j);
                     player.score += score;
+                    targets[j].hit = true;
                     hit_one = true;
                     break;
                 }
@@ -324,9 +334,34 @@ void draw_arrows() {
             a->draw_flight();
             break;
         case STUCK:
-            a->draw_stuck_in();
+            a->draw_stuck();
             break;
         }
+    }
+}
+
+void move_targets() {
+   float dx, dy;
+   vec3 motion;
+    for (size_t i = 0; i < num_targets; i++) {
+        switch (g_difficulty) {
+        case STATIONARY:
+            return;
+        case MOVING:
+            g_target_rads = g_count * 180 / M_PI;
+            dx = cos(g_target_rads / 5000)/15;
+            dy = 0;
+            g_count++;
+            break;
+        case MOVING_PLUS_PLUS:
+            g_target_rads = g_count * 180 / M_PI;
+            dx = cos(g_target_rads / 5000)/15;
+            dy = -sin(g_target_rads / 1500)/20;
+            g_count += 2;
+            break;
+        }
+        motion = {dx, dy, 0};
+        targets[i].move(motion);
     }
 }
 
@@ -449,16 +484,13 @@ void draw_skybox() {
     glEnable(GL_LIGHTING);
 }
 
-int g_count = 0;
-float g_target_rads = 0.0f;
-
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(75, 1, 0.4, 100);
+    gluPerspective(80, 1, 0.4, 100);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
@@ -479,38 +511,15 @@ void display() {
         // translate everything to camera position/view
         player.see();
 
-        if (!paused)
-            simulate_arrows();
-        draw_arrows();
-
         if (!paused) {
-
-            float target_dx, target_dy;
-            vec3 target_motion;
-
-            switch (g_difficulty) {
-            case STATIONARY:
-                break;
-            case MOVING:
-                g_target_rads = g_count * 180 / M_PI;
-                target_dx = cos(g_target_rads / 5000)/15;
-                target_motion = {target_dx, 0, 0};
-                g_count++;
-                break;
-            case MOVING_PLUS_PLUS:
-                g_target_rads = g_count * 180 / M_PI;
-                target_dx = cos(g_target_rads / 5000)/15;
-                target_dy = -sin(g_target_rads / 1500)/20;
-                target_motion = {target_dx, target_dy, 0};
-                g_count++;
-                break;
-            };
-
-            target.move(target_motion);
+            simulate_arrows();
+            move_targets();
         }
 
-        // draw the target
-        // target.draw();
+        // draw the arrows
+        draw_arrows();
+
+        // draw the targets
         draw_targets();
 
         // draw the ground
@@ -546,8 +555,15 @@ void display() {
         glVertex2f(WIN_W / 2, WIN_H / 2);
     glEnd();
 
+    if (all_hit()) {
+        std::string msg = "All targets hit in [TIME]!";
+        draw_centered(120, msg.c_str());
+        draw_centered(80, "Press r to restart");
+    }
+
     if (player.out_of_arrows()) {
-        std::string msg = "You scored " + std::to_string(player.get_score()) + " points!";
+        draw_centered(160, "Out of arrows!");
+        std::string msg = "You scored " + std::to_string(player.get_score()) + " points";
         draw_centered(120, msg.c_str());
         draw_centered(80, "Press r to restart");
     }
@@ -577,6 +593,7 @@ void reset() {
         y = rand() % 9 + 1;     // 1 <= y <= 10
         z = rand() % 10 - 10;   // -10 <= z <= 0
         targets[i].pos = {x, y, z};
+        targets[i].hit = false;
     }
 }
 
@@ -725,9 +742,8 @@ void mouse_motion(int x, int y) {
     last_x = x;
     last_y = y;
 
-    float sensitivity = 1.0;
-    dx *= sensitivity;
-    dy *= sensitivity;
+    dx *= player.sensitivity;
+    dy *= player.sensitivity;
 
     player.yaw += dx;
     player.pitch += dy;
