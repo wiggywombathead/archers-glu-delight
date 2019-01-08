@@ -6,6 +6,7 @@
 #include <ostream>
 
 #define ORTHO_SIZE 1000
+#define GROUND_LEVEL 0
 
 struct vec3 {
     float x, y, z;

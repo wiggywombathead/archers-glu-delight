@@ -157,7 +157,7 @@ void Arrow::simulate() {
     vel += dv;
     pos += vel;
 
-    if (pos.y <= 0) {
+    if (pos.y <= GROUND_LEVEL) {
         pos.y = 0;
         vel.y *= -0.5;
 

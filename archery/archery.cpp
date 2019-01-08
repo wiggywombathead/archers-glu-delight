@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <unistd.h>
 #include <iostream>
 #include <ctime>
 
@@ -19,6 +20,11 @@
 
 #define WIN_W 800
 #define WIN_H 800
+
+#define WORLD_X 100
+#define WORLD_Y 100
+#define WORLD_Z 100
+
 #define FRAME_RATE 60
 
 #define MAX_TARGETS 16
@@ -41,7 +47,7 @@ clock_t pull_last, pull_now;
 bool pulling = false;
 float dt_pull;
 
-float g_distance = 15.0f;
+float g_distance = 0.f;
 int num_targets = 1;
 
 // to vary target positions
@@ -60,12 +66,6 @@ enum Difficulty {
     NUM_DIFFICULTIES
 };
 int g_difficulty;
-
-Player player({0, 2, 0});
-Bow bow(0.02f, 0.6f);
-Arrow quiver[MAX_CAPACITY];
-Target targets[MAX_TARGETS];
-Target target({0, 2.5, -2}, 1.0f, 0.4f);
 
 struct light_t {
     size_t name;
@@ -138,6 +138,7 @@ light_t blue_light = {
 light_t lights[] = {
    red_light, green_light, blue_light
 };
+
 unsigned int curr_light;
 int num_lights = 0;
 
@@ -165,6 +166,12 @@ void set_light(const light_t &light) {
 
     glEnable(light.name);
 }
+
+Player player({0, 2, 10.f});
+Bow bow(0.02f, 0.6f);
+Arrow quiver[MAX_CAPACITY];
+Target targets[MAX_TARGETS];
+Target target({0, 2.5, -2}, 1.0f, 0.4f);
 
 size_t make_axes() {
     static const float verts[3][3] = {
@@ -238,12 +245,12 @@ size_t make_earth() {
             glEnable(GL_TEXTURE_2D);
 
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            glRotatef(90, 0, 0, 1);
-            glScalef(0.5, 50, 50);
-            glTranslatef(-0.5, 0, 0);
+            glScalef(WORLD_X, 0.5f, WORLD_Z);
+            glTranslatef(0, -0.5, 0);
+            glRotatef(90, 0, 1, 0);
             glutSolidCube(1);
 
             glDisable(GL_TEXTURE_2D);
@@ -260,19 +267,55 @@ void draw_earth() {
 }
 
 void draw_toeline() {
-    glDisable(GL_LIGHTING);
-    glMatrixMode(GL_MODELVIEW);
+
+    Target nearest;
+    float min = WORLD_Z;
+
+    for (size_t i = 0; i < num_targets; i++) {
+        if (player.pos.z - targets[i].pos.z < min) {
+            min = player.pos.z - targets[i].pos.z;
+            nearest = targets[i];
+        }
+    }
 
     glPushMatrix();
-        glScalef(25, 1, 1);
-        glBegin(GL_LINES);
-            glColor3f(1, 0, 1);
-            glVertex3f(-1.0f, 0.0f, target.pos.z + g_distance);
-            glVertex3f(1.0f, 0.0f, target.pos.z + g_distance);
-        glEnd();
+        glTranslatef(0, 1, nearest.pos.z + g_distance);
+        glScalef(WORLD_X, 1, 0.2);
+        glutSolidCube(1);
     glPopMatrix();
 
     glEnable(GL_LIGHTING);
+}
+
+void draw_skybox() {
+    glEnable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, g_skybox);
+
+    glPushMatrix();
+        glBindTexture(GL_TEXTURE_2D, g_skybox);
+
+        glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+        glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+        glEnable(GL_TEXTURE_GEN_S);
+        glEnable(GL_TEXTURE_GEN_T);
+        glEnable(GL_TEXTURE_2D);
+
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+        glTranslatef(0, 0, 0);
+        glScalef(WORLD_X, WORLD_Y, WORLD_Z);
+        glutSolidCube(1);
+
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_TEXTURE_GEN_S);
+        glDisable(GL_TEXTURE_GEN_T);
+    glPopMatrix();
+
+    glDisable(GL_TEXTURE_2D);
 }
 
 bool all_hit() {
@@ -351,18 +394,17 @@ void move_targets() {
             g_target_rads = g_count * 180 / M_PI;
             dx = cos(g_target_rads / 5000)/15;
             dy = 0;
-            g_count++;
             break;
         case MOVING_PLUS_PLUS:
             g_target_rads = g_count * 180 / M_PI;
             dx = cos(g_target_rads / 5000)/15;
             dy = -sin(g_target_rads / 1500)/20;
-            g_count += 2;
             break;
         }
         motion = {dx, dy, 0};
         targets[i].move(motion);
     }
+    g_count++;
 }
 
 void draw_targets() {
@@ -375,15 +417,20 @@ void display_help() {
         "Press RMB to nock arrow",
         "Press and hold LMB to fire",
         "",
-        "- HELP -",
         "r : reset level",
-        "c : change game mode",
-        "m : toggle mouse",
+        "m : show/hide mouse",
         "",
+        "+ , - : increase/decrease number of targets",
         "< , > : change difficulty",
-        "[ , ] : decrease/increase foul line"
+        "[ , ] : change foul-line distance",
         "",
-        "q : quit"
+        "q : quit",
+        "",
+        "- NOTES -",
+        "You must be on or behind the foul-line to shoot",
+        "",
+        "Gravity doesn't work for the first ~8 seconds of",
+        "of the world being initialised, just like in real life"
     };
     int n_mess = sizeof(messages) / sizeof(messages[0]);
 
@@ -411,8 +458,6 @@ void display_hud() {
 void display_hints() {
     const char *msgs[] = {
         "Press 'h' for help",
-        "<, > change motion of target(s)",
-        "+, - change number of targets"
     };
     int n_msgs = sizeof(msgs) / sizeof(msgs[0]);
     int y = 960;
@@ -451,46 +496,13 @@ void idle() {
     glutPostRedisplay();
 }
 
-void draw_skybox() {
-    glDisable(GL_LIGHTING);
-    glDisable(GL_DEPTH_TEST);
-
-    gluOrtho2D(0, WIN_W, 0, WIN_H);
-
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, g_skybox);
-
-    glPushMatrix();
-        glBegin(GL_QUADS);
-            // lower left
-            glTexCoord2f(0, 0);
-            glVertex2i(0, 0);
-
-            // lower right
-            glTexCoord2f (1.0f, 0.0f);
-            glVertex2i(WIN_W, 0);
-
-            // upper right
-            glTexCoord2f (1.0f, 1.0f);
-            glVertex2i(WIN_W, WIN_H);
-
-            // upper left
-            glTexCoord2f (0.0f, 1.0f);
-            glVertex2i(0, WIN_H);
-        glEnd();
-    glPopMatrix();
-
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_LIGHTING);
-}
-
 void display() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(80, 1, 0.4, 100);
+    gluPerspective(80, 1, 0.2, 150);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
@@ -501,6 +513,7 @@ void display() {
     glPushMatrix();
 
         // draw weapon
+        set_material(porcelain);
         bow.draw();
 
         // draw current arrow
@@ -517,20 +530,26 @@ void display() {
         }
 
         // draw the arrows
+        set_material(brass);
         draw_arrows();
 
         // draw the targets
+        set_material(porcelain);
         draw_targets();
 
         // draw the ground
         draw_earth();
+
+        set_material(brass);
+        draw_toeline();
 
         draw_lights();
 
         // draw axes
         draw_axes();
 
-        draw_toeline();
+        // simple skybox
+        draw_skybox();
 
     glPopMatrix();
 
@@ -557,8 +576,7 @@ void display() {
 
     if (all_hit()) {
         std::string msg = "All targets hit in [TIME]!";
-        draw_centered(120, msg.c_str());
-        draw_centered(80, "Press r to restart");
+        draw_centered(80, msg.c_str());
     }
 
     if (player.out_of_arrows()) {
@@ -569,13 +587,19 @@ void display() {
     }
 
     glutSwapBuffers();
+
+    // cap to 60 fps
+    int millis_taken = glutGet(GLUT_ELAPSED_TIME);
+    if (millis_taken < FRAME_INTERVAL)
+        usleep(1000 * (FRAME_INTERVAL - millis_taken));
+
 } 
 
 void reset() {
 
     player.score = 0;
     player.curr_arrow = 0;
-    player.pos = {0, 2, target.pos.z + g_distance};
+    player.pos = {0, 2, target.pos.z + g_distance + 10};
     player.pitch = player.yaw = 0.0f;   // reset view
 
     target.pos = {0, 2.5, -2};
@@ -590,7 +614,7 @@ void reset() {
     float x, y, z;
     for (size_t i = 0; i < MAX_TARGETS; i++) {
         x = rand() % 40 - 20;   // -20 <= x <= 20
-        y = rand() % 9 + 1;     // 1 <= y <= 10
+        y = rand() % 8 + 2;     // 2 <= y <= 15
         z = rand() % 10 - 10;   // -10 <= z <= 0
         targets[i].pos = {x, y, z};
         targets[i].hit = false;
@@ -788,9 +812,9 @@ int init(int argc, char *argv[]) {
     for (size_t i = 0; i < num_lights; i++)
         set_light(lights[i]);
 
-    player.pos = {0, 2, target.pos.z + g_distance};
+    player.pos = {0, 2, target.pos.z + g_distance + 10.f};
 
-    // g_skybox = load_and_bind_tex("images/clouds.png");
+    g_skybox = load_and_bind_tex("images/clouds.png");
 
     // initialise quiver
     for (size_t i = 0; i < MAX_CAPACITY; i++) {
@@ -857,6 +881,8 @@ int main(int argc, char *argv[]) {
     glutReshapeFunc(reshape);
     glutDisplayFunc(display);
     glutIdleFunc(idle);
+
+    glutFullScreen();
 
 	fprintf(stderr, "Open GL version %s\n", glGetString(GL_VERSION));
     init(argc, argv);

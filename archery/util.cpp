@@ -78,7 +78,7 @@ unsigned int g_fragment_obj = 0;
 
 void draw_text(const int x, const int y, const char *str) {
 
-	const float scale = 0.25f;
+	const float scale = 0.125;
 
 	glColor3f(1.0f, 1.0f, 0.0f);
 	glMatrixMode(GL_PROJECTION);
@@ -87,10 +87,11 @@ void draw_text(const int x, const int y, const char *str) {
 		gluOrtho2D(0, ORTHO_SIZE, 0, ORTHO_SIZE);
 
 		glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
 		glPushMatrix();
-			glLoadIdentity();
 			glTranslatef(x, y, 0.0f);
 			glScalef(scale, scale, 1.0f);
+            glColor3f(1, 1, 1);
     		size_t len = strlen(str);
     		for (size_t i = 0; i < len; i++)
        			glutStrokeCharacter(GLUT_STROKE_ROMAN, str[i]);
@@ -102,7 +103,7 @@ void draw_text(const int x, const int y, const char *str) {
 
 void draw_centered(const int y, const char *str) {
 
-    const float scale = 0.25f;
+    const float scale = 0.125f;
 
     size_t len = strlen(str);
     int width = 0;
@@ -114,7 +115,7 @@ void draw_centered(const int y, const char *str) {
 
 void draw_raligned(const int x, const int y, const char *str) {
     
-    const float scale = 0.25f;
+    const float scale = 0.125f;
 
     size_t len = strlen(str);
     int width = 0;
