@@ -9,6 +9,9 @@
 
 struct vec3 {
     float x, y, z;
+    bool operator==(const vec3& v) {
+        return (x == v.x) && (y == v.y) && (z == v.z);
+    }
     vec3 operator*(const float& k) {
         vec3 res;
         res.x = x * k;

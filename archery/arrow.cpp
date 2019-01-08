@@ -146,7 +146,7 @@ void Arrow::simulate() {
     curr_tick = clock();
 
     // float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
-    float dt = glutGet(GLUT_ELAPSED_TIME) / 1000;
+    float dt = glutGet(GLUT_ELAPSED_TIME) / 10000;
 
     /* HACK - check if we dip below 30fps and assume we are paused */
     if (dt > 0.03)
@@ -200,11 +200,11 @@ bool Arrow::has_hit(Target& t) {
     if (
         ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z <= t.pos.z + t.thickness + t.margin) && (pos.z >= t.pos.z - 8*t.margin)) ||
+        (pos.z <= t.pos.z + t.thickness + 4*t.margin) && (pos.z >= t.pos.z - 8*t.margin)) ||
 
         ((tail.x >= t.pos.x - t.radius) && (tail.x <= t.pos.x + t.radius) &&
         (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
-        (tail.z <= t.pos.z + t.thickness + t.margin) && (tail.z >= t.pos.z - 8*t.margin))
+        (tail.z <= t.pos.z + t.thickness + 4*t.margin) && (tail.z >= t.pos.z - 8*t.margin))
     ) {
         if (state == FIRED) {
             offset = {
@@ -212,6 +212,8 @@ bool Arrow::has_hit(Target& t) {
                 pos.y - t.pos.y,
                 pos.z - t.pos.z
             };
+            state = STUCK;
+            stuck_in = t;
         }
 
         return true;
@@ -228,7 +230,7 @@ void Arrow::stick_in(Target& t) {
     };
 }
 
-void Arrow::draw_stuck_in(Target& t) {
+void Arrow::draw_stuck_in() {
     glPushMatrix();
         glTranslatef(pos.x, pos.y, pos.z);
         point();

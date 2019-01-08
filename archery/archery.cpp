@@ -42,7 +42,7 @@ bool pulling = false;
 float dt_pull;
 
 float g_distance = 15.0f;
-int num_targets = 3;
+int num_targets = 1;
 
 size_t g_earth;
 size_t g_axes;
@@ -276,14 +276,23 @@ void simulate_arrows() {
 
         Arrow *a = &quiver[i];
 
+        // avoid unnecessary simulation of arrow
+        if (a->state == DEAD)
+            continue;
+
+        // update arrow's position based on the target it is in
+        //   useful when targets can move
+        if (a->state == STUCK) {
+            a->stick_in(a->stuck_in);
+            continue;
+        }
+
+        // only simulate arrow if arrow has not hit any
+        bool hit_one = false;
+
         for (size_t j = 0; j < num_targets; j++) {
 
             Target current = targets[j];
-
-            // avoid unnecessary simulation of arrow
-            if (a->state == DEAD) {
-                continue;
-            }
 
             if (a->state == FIRED) {
 
@@ -292,16 +301,16 @@ void simulate_arrows() {
                     int score = a->get_score(current);
                     printf("Hit! (%d)\n", score);
                     player.score += score;
-                    a->state = STUCK;
-                } else {
-                    a->simulate();
+                    hit_one = true;
+                    break;
                 }
             }
-
-            if (a->state == STUCK)
-                a->stick_in(current);
-
         }
+
+        if (!hit_one)
+            a->simulate();
+
+        hit_one = false;
     }
 }
 
@@ -315,7 +324,7 @@ void draw_arrows() {
             a->draw_flight();
             break;
         case STUCK:
-            a->draw_stuck_in(target);
+            a->draw_stuck_in();
             break;
         }
     }
@@ -365,7 +374,15 @@ void display_hud() {
 }
 
 void display_hints() {
-    draw_raligned(980, 960, "Press 'h' for help");
+    char *msgs[] = {
+        "Press 'h' for help",
+        "<, > change motion of target(s)",
+        "+, - change number of targets"
+    };
+    int n_msgs = sizeof(msgs) / sizeof(msgs[0]);
+    int y = 960;
+    for (size_t i = 0; i < n_msgs; i++)
+        draw_raligned(980, y - i * 40, msgs[i]);
 }
 
 void idle() {
@@ -552,6 +569,15 @@ void reset() {
     for (size_t i = 0; i < player.capacity; i++) {
         quiver[i].state = STASHED;
     }
+
+    // re-randomise target positions
+    float x, y, z;
+    for (size_t i = 0; i < MAX_TARGETS; i++) {
+        x = rand() % 40 - 20;   // -20 <= x <= 20
+        y = rand() % 9 + 1;     // 1 <= y <= 10
+        z = rand() % 10 - 10;   // -10 <= z <= 0
+        targets[i].pos = {x, y, z};
+    }
 }
 
 void keyboard(unsigned char k, int, int) {
@@ -616,6 +642,14 @@ void keyboard(unsigned char k, int, int) {
         break;
     case '>':
         g_difficulty = (g_difficulty + 1) % NUM_DIFFICULTIES;
+        break;
+    case '-':
+        num_targets--;
+        num_targets = num_targets < 0 ? 0 : num_targets;
+        break;
+    case '+':
+        num_targets++;
+        num_targets = num_targets > MAX_TARGETS ? MAX_TARGETS : num_targets;
         break;
     }
 
@@ -753,9 +787,9 @@ int init(int argc, char *argv[]) {
 
     // initialise targets
     for (size_t i = 0; i < MAX_TARGETS; i++) {
-        x = rand() % 50 - 25;   // -25 <= x <= 25
+        x = rand() % 40 - 20;   // -20 <= x <= 20
         y = rand() % 9 + 1;     // 1 <= y <= 10
-        z = rand() % 25 - 25;   // -25 <= z <= 0
+        z = rand() % 10 - 10;   // -10 <= z <= 0
         targets[i] = Target({x, y, z}, 1.0f, 0.4f);
         targets[i].make_handle();
     }
