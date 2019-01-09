@@ -148,15 +148,17 @@ void Arrow::simulate() {
     // prev_tick = curr_tick;
     // curr_tick = glutGet(GLUT_ELAPSED_TIME);
     
-     prev_tick = curr_tick;
-     curr_tick = clock();
+    prev_tick = curr_tick;
+    curr_tick = clock();
 
-     float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
-     dt = dt > 0.1 ? 0.016 : dt;
+    float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
+    dt = dt > 0.1 ? 0.016 : dt;
 
     // float dt = glutGet(GLUT_ELAPSED_TIME) / 10000;
     // float dt = ((float) (curr_tick - prev_tick)) / 1000.f;
-    // printf("%.5f\n", dt);
+
+    if (curr_tick < prev_tick)
+        dt = 0.016;
 
     vec3 dv = gravity * dt;
 

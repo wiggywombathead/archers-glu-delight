@@ -1,0 +1,73 @@
+\documentclass[8pt]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{fancyhdr}
+
+\usepackage{longtable}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{CS324 - Computer Graphics}
+\rhead{Thomas Archbold, 1602581}
+
+\title{CS324 Computer Graphics Coursework 2018}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+    Thomas Archbold \\
+    1602581 \\
+    Unversity of Warwick
+\end{center}
+
+\section*{Features of the solution}
+% First person shooter
+% Animation of bow and arrow in realistic manner
+% Different game modes - timed, high score, limited arrows
+% Alter number of targets
+This solution features an archery game in the style of a first-person shooter.
+The player is equipped with a simple bow and a limited number of arrows, which
+can be used to shoot at the targets floating in the field before them. The main
+objectives available to pursue in the game are to obtain a high score, by
+hitting targets as close to their centre as possible, and to hit all the targets
+(anywhere) as quickly as possible. There are several aspects to the gameplay
+that the player is able to change while playing, and these include the number of
+arrows in the player's quiver, the number and position of targets, and the
+difficulty level. In particular, difficulty ranges from having stationary
+targets, to targets which move horizontally only, to targets which move both
+horizontally and vertically.
+
+\section*{Main design aspects}
+
+% simulation
+% collision detection
+\section*{Specific OpenGL/GLSL features are employed}
+The solution mainly uses the fixed function pipeline to draw the various shapes
+to the screen, although using the code provided as part of the labs, the option
+is open for shaders to be written and used. 
+
+\section*{Compiling and running}
+The makefile provided has been modified slightly from the labs in order to make
+compilation as simple as possible. All that is needed is to enter the
+\texttt{make} command at the prompt and the entire solution will be built. This
+uses make's pattern matching to iterate through all \texttt{.cpp} files in the
+directory and compile them into object files, to produce the final executable
+\texttt{archery}. It is then run in the normal way from the command prompt.
+Since there is support for GLSL shaders, different ones may be selected by
+providing them as command line arguments. So to use the toon shaders from the
+labs, issue the command \texttt{./archery toon.vert toon.frag}.
+
+\section*{Using the application}
+Once the application has started the user is free to start firing arrows.
+Various important pieces of information are displayed in the heads up display,
+such arrows remaining and the current score. The user may also press the 'h' key
+for help, which displays the controls and brief instructions on how to play the
+game. The player is free to play however they want; they may go for one
+objective, both, or neither, and in addition switch between the different modes
+using the keys found in the help messages.
+
+\section*{Further ideas}
+\section*{Known bugs/limitations}
+
+\end{document}

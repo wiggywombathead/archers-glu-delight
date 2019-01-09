@@ -369,7 +369,7 @@ void simulate_arrows() {
         }
 
         // only simulate arrow if arrow has not hit any
-        bool hit_one = false;
+        bool hit_none = true;
 
         for (size_t j = 0; j < num_targets; j++) {
 
@@ -381,16 +381,16 @@ void simulate_arrows() {
                     printf("Hit target %d! (%d)\n", j, score);
                     player.score += score;
                     targets[j].hit = true;
-                    hit_one = true;
+                    hit_none = false;
                     break;
                 }
             }
         }
 
-        if (!hit_one)
+        if (hit_none)
             a->simulate();
 
-        hit_one = false;
+        hit_none = false;
     }
 }
 
@@ -432,6 +432,13 @@ void move_targets() {
         targets[i].move(motion);
     }
     g_count++;
+}
+
+void move_targets(vec3 m) {
+   vec3 motion;
+    for (size_t i = 0; i < num_targets; i++) {
+        targets[i].move(m);
+    }
 }
 
 void draw_targets() {
@@ -724,10 +731,14 @@ void keyboard(unsigned char k, int, int) {
         g_axes_flag = !g_axes_flag;
         break;
     case '[':
-        g_distance -= 0.5f;
+        player.capacity = player.capacity == 0 ? 0 : player.capacity - 1;
+        if (player.curr_arrow > player.capacity)
+            player.curr_arrow = player.capacity;
         break;
     case ']':
-        g_distance += 0.5f;
+        player.capacity++;
+        player.capacity =
+            (player.capacity > MAX_CAPACITY) ? MAX_CAPACITY : player.capacity;
         break;
     case '<':
         g_difficulty = (g_difficulty - 1) % NUM_DIFFICULTIES;
@@ -753,20 +764,24 @@ void keyboard(unsigned char k, int, int) {
 
 void special(int k, int, int) {
 
+    vec3 m;
+
     switch (k) {
     case GLUT_KEY_LEFT:
-        target.move({-1, 0, 0});
+        m = {-1, 0, 0};
         break;
     case GLUT_KEY_RIGHT:
-        target.move({1, 0, 0});
+        m = {1, 0, 0};
         break;
     case GLUT_KEY_UP:
-        target.move({0, 1, 0});
+        m = {0, 1, 0};
         break;
     case GLUT_KEY_DOWN:
-        target.move({0, -1, 0});
+        m = {0, -1, 0};
         break;
     }
+
+    move_targets(m);
 
     glutPostRedisplay();
 }
