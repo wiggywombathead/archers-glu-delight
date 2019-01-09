@@ -1,27 +1,28 @@
 # TODO
-- [x] Gravity doesn't kick in until a few seconds into the game - why???
-  - [ ] idk but now there's a help message about it
 - [ ] Wind
-- [ ] Adjustable difficulty
-  - [x] Moving targets
-  - [x] Limited arrows
-  - [x] Multiple targets
-  - [ ] Time limit - get all targets
 - [x] Lights
   - [ ] Better
-- [ ] Skybox?
 - [x] Shaders
   - [ ] Now get them working better/nicer
 - [ ] Smoother bow (adjustable with # segments)
-- [ ] Regulate/display FPS
 - [ ] Fire straight up
 - [ ] Smooth walking?
 - [x] Arrow head in direction of travel
   - [ ] Not always the case e.g. if facing different direction
 - [x] Slow down time
   - [ ] Get slow motion working correctly (not just for gravity)
+- [x] Adjustable difficulty
+  - [x] Moving targets
+  - [x] Limited arrows
+  - [x] Multiple targets
+  - [x] Time limit - get all targets
+- [x] Skybox
+- [x] Regulate/display FPS
+- [x] Gravity doesn't kick in until a few seconds into the game - why???
+  - [x] idk but now there's a help message about it
+  - [x] Aight now it works better
 - [x] Pause
-  - [ ] Make unpausing hack more elegant
+  - [x] Make unpausing hack more elegant
 - [x] Scoring
   - [x] Now fix bug when target is moving
 - [x] Help messages and other polish

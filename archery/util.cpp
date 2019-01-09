@@ -78,7 +78,7 @@ unsigned int g_fragment_obj = 0;
 
 void draw_text(const int x, const int y, const char *str) {
 
-	const float scale = 0.125;
+	const float scale = 0.2;
 
 	glColor3f(1.0f, 1.0f, 0.0f);
 	glMatrixMode(GL_PROJECTION);
@@ -103,7 +103,7 @@ void draw_text(const int x, const int y, const char *str) {
 
 void draw_centered(const int y, const char *str) {
 
-    const float scale = 0.125f;
+    const float scale = 0.2;
 
     size_t len = strlen(str);
     int width = 0;
@@ -115,7 +115,7 @@ void draw_centered(const int y, const char *str) {
 
 void draw_raligned(const int x, const int y, const char *str) {
     
-    const float scale = 0.125f;
+    const float scale = 0.2;
 
     size_t len = strlen(str);
     int width = 0;

@@ -1,4 +1,4 @@
-#include "player.h"
+# include "player.h"
 
 #include <stdio.h>
 #include <ctime>
@@ -44,9 +44,9 @@ void Player::pull(Bow& b, Arrow &a, float amnt) {
         return;
 
     power += amnt;
-    power = (power > 1.5f) ? 1.5f : power;
-    a.pulled = power / 1.5f;    // max arrow recess is 1.5
-    b.bent = power * 20;        // max bend is 1.5 * 20 = 30 degrees
+    power = (power > 2.5f) ? 2.5f : power;
+    a.pulled = power / 2.5f;    // max arrow recess is 1.5
+    b.bent = power * 10;        // max bend is 1.5 * 20 = 30 degrees
 }
 
 void Player::fire(Bow& b, Arrow &a) {

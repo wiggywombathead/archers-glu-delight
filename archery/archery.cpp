@@ -42,10 +42,19 @@ bool want_help = false;
 int last_x;
 int last_y;
 
+// measure current time and start time to find total
+int start_ms, curr_ms;
+float total_time, curr_time;
+bool first_finish = true;
+
 // to calculate time spent drawing bowstring
-clock_t pull_last, pull_now;
-bool pulling = false;
+int pull_last, pull_now;
 float dt_pull;
+bool pulling = false;
+
+// for framerate
+int frame_last, frame_now;
+int dt_frame;
 
 float g_distance = 0.f;
 int num_targets = 1;
@@ -54,9 +63,12 @@ int num_targets = 1;
 int g_count = 0;
 float g_target_rads = 0.0f;
 
+// whether or not to draw axes and lights
+bool g_axes_flag = false;
+
+size_t g_wall;
 size_t g_earth;
 size_t g_axes;
-
 size_t g_skybox;
 
 enum Difficulty {
@@ -266,25 +278,40 @@ void draw_earth() {
     glCallList(g_earth);
 }
 
+size_t make_wall() {
+    size_t handle = glGenLists(1);
+    int tex = load_and_bind_tex("images/bricks-texture.png");
+
+    glNewList(handle, GL_COMPILE);
+        glPushMatrix();
+            glBindTexture(GL_TEXTURE_2D, tex);
+
+            glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+            glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+            glEnable(GL_TEXTURE_GEN_S);
+            glEnable(GL_TEXTURE_GEN_T);
+            glEnable(GL_TEXTURE_2D);
+
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+            glTranslatef(0, 0, 0);
+            glScalef(WORLD_X / 2, 3, 0.5);
+            glutSolidCube(1);
+
+            glDisable(GL_TEXTURE_2D);
+            glEnable(GL_TEXTURE_GEN_S);
+            glEnable(GL_TEXTURE_GEN_T);
+        glPopMatrix();
+    glEndList();
+    
+    return handle;
+}
+
 void draw_toeline() {
-
-    Target nearest;
-    float min = WORLD_Z;
-
-    for (size_t i = 0; i < num_targets; i++) {
-        if (player.pos.z - targets[i].pos.z < min) {
-            min = player.pos.z - targets[i].pos.z;
-            nearest = targets[i];
-        }
-    }
-
-    glPushMatrix();
-        glTranslatef(0, 1, nearest.pos.z + g_distance);
-        glScalef(WORLD_X, 1, 0.2);
-        glutSolidCube(1);
-    glPopMatrix();
-
-    glEnable(GL_LIGHTING);
+    glCallList(g_wall);
 }
 
 void draw_skybox() {
@@ -351,7 +378,7 @@ void simulate_arrows() {
                 // detect first collision
                 if (a->colliding_with(targets[j])) {
                     int score = a->get_score(targets[j]);
-                    printf("Hit target %d! (%d)\n", score, j);
+                    printf("Hit target %d! (%d)\n", j, score);
                     player.score += score;
                     targets[j].hit = true;
                     hit_one = true;
@@ -427,10 +454,9 @@ void display_help() {
         "q : quit",
         "",
         "- NOTES -",
-        "You must be on or behind the foul-line to shoot",
-        "",
-        "Gravity doesn't work for the first ~8 seconds of",
-        "of the world being initialised, just like in real life"
+        "In a bid to cut costs, this target range was",
+        "constructed on a laser grid. Please do not walk",
+        "past the wall - it is there for your safety"
     };
     int n_mess = sizeof(messages) / sizeof(messages[0]);
 
@@ -469,11 +495,14 @@ void idle() {
     
     if (pulling) {
         pull_last = pull_now;
-        pull_now = clock();
-        
-        // don't ask why this gets shorter the more you fire ...
-        int millis = glutGet(GLUT_ELAPSED_TIME);
-        float amount = millis / 100000.f;
+        pull_now = glutGet(GLUT_ELAPSED_TIME);
+
+        /* dunno why it does this, but it fixes the issue */
+        if (pull_last > pull_now)
+            return;
+         
+        dt_pull = ((float) (pull_now - pull_last)) / 1000.f;
+        float amount = dt_pull * 2.5f;;
 
         player.pull(bow, quiver[player.curr_arrow], amount);
     }
@@ -518,6 +547,7 @@ void display() {
 
         // draw current arrow
         if (quiver[player.curr_arrow].state == NOCKED) {
+            set_material(brass);
             quiver[player.curr_arrow].draw_nocked();
         }
 
@@ -534,7 +564,7 @@ void display() {
         draw_arrows();
 
         // draw the targets
-        set_material(porcelain);
+        set_material(flat);
         draw_targets();
 
         // draw the ground
@@ -543,10 +573,10 @@ void display() {
         set_material(brass);
         draw_toeline();
 
-        draw_lights();
-
-        // draw axes
-        draw_axes();
+        if (g_axes_flag) {
+            draw_lights();
+            draw_axes();
+        }
 
         // simple skybox
         draw_skybox();
@@ -574,24 +604,43 @@ void display() {
         glVertex2f(WIN_W / 2, WIN_H / 2);
     glEnd();
 
+    // timing
+    if (!paused) {
+        curr_ms = glutGet(GLUT_ELAPSED_TIME);
+        curr_time = (curr_ms - start_ms) / 1000.f;
+    }
+
     if (all_hit()) {
-        std::string msg = "All targets hit in [TIME]!";
+        if (first_finish) {
+            total_time = curr_time;
+            first_finish = false;
+        }
+
+        std::string time_str = std::to_string(total_time);
+        draw_centered(960, time_str.c_str());
+        std::string msg = "All targets hit in " + std::to_string(total_time) + "s";
         draw_centered(80, msg.c_str());
+    } else {
+        std::string time_str = std::to_string(curr_time);
+        draw_centered(960, time_str.c_str());
     }
 
     if (player.out_of_arrows()) {
         draw_centered(160, "Out of arrows!");
         std::string msg = "You scored " + std::to_string(player.get_score()) + " points";
         draw_centered(120, msg.c_str());
-        draw_centered(80, "Press r to restart");
+        draw_centered(40, "Press r to restart");
     }
 
     glutSwapBuffers();
 
     // cap to 60 fps
-    int millis_taken = glutGet(GLUT_ELAPSED_TIME);
-    if (millis_taken < FRAME_INTERVAL)
-        usleep(1000 * (FRAME_INTERVAL - millis_taken));
+    frame_last = frame_now;
+    frame_now = glutGet(GLUT_ELAPSED_TIME);
+    dt_frame = frame_now - frame_last;
+
+    if (dt_frame < FRAME_INTERVAL);
+        usleep(1000 * FRAME_INTERVAL - dt_frame);
 
 } 
 
@@ -599,8 +648,7 @@ void reset() {
 
     player.score = 0;
     player.curr_arrow = 0;
-    player.pos = {0, 2, target.pos.z + g_distance + 10};
-    player.pitch = player.yaw = 0.0f;   // reset view
+    player.pos = {0, 2.5, 5};
 
     target.pos = {0, 2.5, -2};
     g_count = 0;    // for centred movement when reset
@@ -619,6 +667,9 @@ void reset() {
         targets[i].pos = {x, y, z};
         targets[i].hit = false;
     }
+
+    start_ms = glutGet(GLUT_ELAPSED_TIME);
+    first_finish = true;
 }
 
 void keyboard(unsigned char k, int, int) {
@@ -646,11 +697,8 @@ void keyboard(unsigned char k, int, int) {
     case 'w':
         dx = 0.2 * sin(player.yaw * M_PI / 180);
         dz = 0.2 * cos(player.yaw * M_PI / 180);
-
         player.pos.x += dx;
-
-        if (player.pos.z - target.pos.z >= g_distance)
-            player.pos.z -= dz;
+        player.pos.z -= dz;
         break;
     case 's':
         player.pos.x -= 0.2 * sin(player.yaw * M_PI / 180);
@@ -671,6 +719,9 @@ void keyboard(unsigned char k, int, int) {
             glutSetCursor(GLUT_CURSOR_INHERIT);
         else
             glutSetCursor(GLUT_CURSOR_NONE);
+        break;
+    case 'l':
+        g_axes_flag = !g_axes_flag;
         break;
     case '[':
         g_distance -= 0.5f;
@@ -693,6 +744,9 @@ void keyboard(unsigned char k, int, int) {
         num_targets = num_targets > MAX_TARGETS ? MAX_TARGETS : num_targets;
         break;
     }
+
+    if (player.pos.z < 0.f)
+        player.pos.z = 0.f;
 
     glutPostRedisplay();
 }
@@ -812,7 +866,7 @@ int init(int argc, char *argv[]) {
     for (size_t i = 0; i < num_lights; i++)
         set_light(lights[i]);
 
-    player.pos = {0, 2, target.pos.z + g_distance + 10.f};
+    player.pos = {0, 2.5, 5};
 
     g_skybox = load_and_bind_tex("images/clouds.png");
 
@@ -829,7 +883,7 @@ int init(int argc, char *argv[]) {
     for (size_t i = 0; i < MAX_TARGETS; i++) {
         x = rand() % 40 - 20;   // -20 <= x <= 20
         y = rand() % 9 + 1;     // 1 <= y <= 10
-        z = rand() % 10 - 10;   // -10 <= z <= 0
+        z = rand() % 9 - 10;   // -10 <= z <= -2
         targets[i] = Target({x, y, z}, 1.0f, 0.4f);
         targets[i].make_handle();
     }
@@ -837,6 +891,7 @@ int init(int argc, char *argv[]) {
     bow.make_handle();
     target.make_handle();
     g_earth = make_earth();
+    g_wall = make_wall();
     g_axes = make_axes();
 
     return 0;
@@ -882,7 +937,7 @@ int main(int argc, char *argv[]) {
     glutDisplayFunc(display);
     glutIdleFunc(idle);
 
-    glutFullScreen();
+    // glutFullScreen();
 
 	fprintf(stderr, "Open GL version %s\n", glGetString(GL_VERSION));
     init(argc, argv);

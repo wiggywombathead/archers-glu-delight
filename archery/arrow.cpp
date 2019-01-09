@@ -7,7 +7,7 @@
 #include <ctime>
 #include <cstdio>
 
-clock_t prev_tick, curr_tick;
+int prev_tick, curr_tick;
 vec3 gravity = {0, -9.81, 0};
 vec3 wind;
 
@@ -133,6 +133,9 @@ void Arrow::point() {
         glRotatef(180 + yaw, 1, 0, 0);
         glRotatef(180 + pitch, 0, 1, 0);
     }
+
+    if (state == DEAD)
+        glRotatef(90, 1, 0, 0);
 }
 
 void Arrow::simulate() {
@@ -142,15 +145,18 @@ void Arrow::simulate() {
         state = DEAD;
     }
 
-    prev_tick = curr_tick;
-    curr_tick = clock();
+    // prev_tick = curr_tick;
+    // curr_tick = glutGet(GLUT_ELAPSED_TIME);
+    
+     prev_tick = curr_tick;
+     curr_tick = clock();
 
-    // float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
-    float dt = glutGet(GLUT_ELAPSED_TIME) / 10000;
+     float dt = ((float) (curr_tick - prev_tick)) / CLOCKS_PER_SEC;
+     dt = dt > 0.1 ? 0.016 : dt;
 
-    /* HACK - check if we dip below 30fps and assume we are paused */
-    if (dt > 0.03)
-        dt = 0.001f;
+    // float dt = glutGet(GLUT_ELAPSED_TIME) / 10000;
+    // float dt = ((float) (curr_tick - prev_tick)) / 1000.f;
+    // printf("%.5f\n", dt);
 
     vec3 dv = gravity * dt;
 
@@ -165,7 +171,7 @@ void Arrow::simulate() {
         vel.z *= 0.5;
     }
 
-    roll += 30;
+    roll += 15;
 
     // glutPostRedisplay();
 }
@@ -201,17 +207,18 @@ bool Arrow::colliding_with(Target& t) {
     if (
         ((pos.x >= t.pos.x - t.radius) && (pos.x <= t.pos.x + t.radius) &&
         (pos.y >= t.pos.y - t.radius) && (pos.y <= t.pos.y + t.radius) &&
-        (pos.z <= t.pos.z + t.thickness + 2*t.margin) && (pos.z >= t.pos.z - 8*t.margin)) ||
+        (pos.z <= t.pos.z + t.thickness + 4*t.margin) && (pos.z >= t.pos.z - 8*t.margin)) /*||
 
         ((tail.x >= t.pos.x - t.radius) && (tail.x <= t.pos.x + t.radius) &&
         (tail.y >= t.pos.y - t.radius) && (tail.y <= t.pos.y + t.radius) &&
-        (tail.z <= t.pos.z + t.thickness + 2*t.margin) && (tail.z >= t.pos.z - 8*t.margin))
+        (tail.z <= t.pos.z + t.thickness + 4*t.margin) && (tail.z >= t.pos.z - 8*t.margin))*/
     ) {
             offset = {
                 pos.x - t.pos.x,
                 pos.y - t.pos.y,
                 pos.z - t.pos.z
             };
+
             state = STUCK;
             stuck_in = &t;
 
